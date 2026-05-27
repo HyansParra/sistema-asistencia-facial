@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asistencia - Registro Facial</title>
+    <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+
+    <div class="tarjeta-asistencia">
+        
+        <h1>Control de Asistencia</h1>
+        <p class="subtitulo">Por favor, mire a la cámara para registrar su marca</p>
+
+        <div class="contenedor-camara">
+            <video id="video-webcam" autoplay playsinline muted></video>
+            <div class="recuadro-rostro"></div>
+        </div>
+
+        <div class="bloque-notificaciones">
+            <div id="reloj-digital">Fecha y Hora: Cargando...</div>
+            <div id="mensaje-servidor">Estado: Esperando acción...</div>
+        </div>
+
+        <div class="grupo-botones">
+            <button id="btn-entrada" class="boton boton-verde" onclick="procesarMarcaje('ENTRADA')">
+                Registrar Entrada
+            </button>
+            <button id="btn-salida" class="boton boton-rojo" onclick="procesarMarcaje('SALIDA')">
+                Registrar Salida
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // Mis elementos del DOM que voy a usar para mostrar la cámara, el reloj y los mensajes del servidor
+        const elementoVideo = document.getElementById('video-webcam');
+        const elementoReloj = document.getElementById('reloj-digital');
+        const elementoMensaje = document.getElementById('mensaje-servidor');
+
+        // Función para prender la cámara apenas cargue la página
+        async function iniciarCamara() {
+            try {
+                const flujoVideo = await navigator.mediaDevices.getUserMedia({ video: true });
+                elementoVideo.srcObject = flujoVideo;
+            } catch (error) {
+                console.error("Error en la cámara:", error);
+                elementoMensaje.innerText = "Estado: Error al conectar la cámara web";
+            }
+        }
+
+        // Para mostrar la fecha y hora actualizada cada segundo
+        function actualizarReloj() {
+            const momentoActual = new Date();
+            
+            const opcionesFormato = {
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                hour12: false
+            };
+            
+            elementoReloj.innerText = `Fecha y Hora: ${momentoActual.toLocaleString('es-CL', opcionesFormato)}`;
+        }
+
+        // Aquí tengo que implementar la lógica para procesar el marcaje de entrada o salida, por ahora solo muestro un mensaje
+        function procesarMarcaje(tipoRegistro) {
+            elementoMensaje.innerText = `Estado: Procesando ${tipoRegistro}...`;
+        }
+
+        // Arrancar la cámara y el reloj al abrir el sitio
+        iniciarCamara();
+        actualizarReloj();
+        setInterval(actualizarReloj, 1000);
+    </script>
+</body>
+</html>
