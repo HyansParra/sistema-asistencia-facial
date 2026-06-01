@@ -1,4 +1,4 @@
-from fastapi import FastAPI # Importamos FastAPI para crear la aplicación web
+from fastapi import FastAPI, File, UploadFile, Form # Importamos FastAPI y herramientas para manejar archivos y formularios en las rutas
 from fastapi.middleware.cors import CORSMiddleware # Middleware para manejar CORS y permitir peticiones desde el frontend
 from fastapi.staticfiles import StaticFiles # Para servir archivos estáticos como HTML, CSS y JS desde una carpeta específica
 from fastapi.responses import RedirectResponse # Para redirigir a la página principal de marcación de asistencia
@@ -34,3 +34,16 @@ def verificar_estado():
     Endpoint simple para verificar que el servidor está encendido y respondiendo.
     """
     return {"estado": "operativo", "mensaje": "El servidor de asistencia funciona correctamente"}
+
+@app.post("/marcar")
+async def recibir_marca(foto: UploadFile = File(...), tipo_registro: str = Form(...)):
+    """
+    Recibe el archivo de imagen y el tipo de marca (ENTRADA/SALIDA) desde la interfaz web.
+    """
+    # Esto imprimirá la confirmación en terminal de VS Code
+    print(f"--> Solicitud recibida para Registro: {tipo_registro} | Archivo: {foto.filename}")
+    
+    return {
+        "estado": "recibido", 
+        "mensaje": f"Captura recibida con éxito para registrar {tipo_registro}"
+    }
