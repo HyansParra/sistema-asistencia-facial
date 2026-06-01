@@ -42,3 +42,25 @@ def registrar_marca_asistencia(empleado_id: str, tipo: str):
     except Exception as e:
         print(f"Error al registrar asistencia: {e}")
         return None
+
+def buscar_coincidencia_facial(vector_rostro: list):
+    """
+    Llama a la funcion interna de Supabase para comparar el vector 
+    actual con el de todos los empleados registrados.
+    """
+    try:
+        # Invocamos el RPC que creamos en el SQL Editor
+        # Este RPC se encarga de calcular la distancia entre el vector buscado y los vectores almacenados
+        resultado = base_datos.rpc(
+            "buscar_rostro_coincidente", 
+            {"vector_buscado": vector_rostro}
+        ).execute()
+        
+        # Si encuentra registros, devolvemos el primer resultado
+        if resultado.data and len(resultado.data) > 0:
+            return resultado.data[0]
+            
+        return None
+    except Exception as e:
+        print(f"Error al buscar coincidencia en la BD: {e}")
+        return None
