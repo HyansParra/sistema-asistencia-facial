@@ -31,7 +31,7 @@
         </div>
 
         <div class="bloque-notificaciones">
-            <div id="estado-registro">Estado: Esperando datos del administrador...</div>
+            <div id="estado-registro">Por favor, ingrese el RUT y nombre para comenzar...</div>
         </div>
 
         <button id="btn-captura" class="boton boton-verde" style="width: 100%;" onclick="iniciarCapturaBiometrica()">
@@ -86,8 +86,16 @@
             for (let i = 0; i < instrucciones.length; i++) {
                 componenteEstado.innerText = `Posición ${i + 1}/5: ${instrucciones[i]}`;
                 
-                // Espera 1 segundo para que el usuario pueda ajustar su posición antes de capturar la imagen
-                await esperar(1000);
+                // Espera 5 segundos para que el usuario pueda ajustar su posición antes de capturar la imagen
+                await esperar(5000); // 5 segundos para cada posición
+                
+                // Efecto visual de captura (flash) para dar feedback al usuario
+                video.classList.add('camara-flash');
+    
+                // Quitamos la clase después de 200ms para que la animación se pueda repetir en el próximo ciclo
+                setTimeout(() => {
+                    video.classList.remove('camara-flash');
+                }, 200);
                 
                 lienzo.width = video.videoWidth;
                 lienzo.height = video.videoHeight;
@@ -102,7 +110,7 @@
                 });
             }
 
-            componenteEstado.innerText = "Estado: Procesando y empaquetando ráfaga de imágenes...";
+            componenteEstado.innerText = "Estado: Procesando datos de registro...";
             const formulario = new FormData();
             formulario.append('rut', rut);
             formulario.append('nombre_completo', nombre);
@@ -112,7 +120,7 @@
             });
 
             try {
-                componenteEstado.innerText = "Estado: Enviando ráfaga biométrica a Python...";
+                componenteEstado.innerText = "Estado: Guardando credenciales en la base de datos...";
                 
                 const respuesta = await fetch('/registrar', {
                     method: 'POST',

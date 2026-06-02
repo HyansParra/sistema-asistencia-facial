@@ -36,15 +36,17 @@ h1 {
     position: relative; /* para que el recuadro-rostro no se desarme */
     width: 100%;
     height: 380px;
-    background-color: #000;
+    background-color: #ffffff;
     border-radius: 8px;
     overflow: hidden;
 }
 
-#video-webcam {
+/* agrupamos estilos para ambos videos, webcam y registro */
+#video-webcam, #video-registro {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    transform: scaleX(-1); /* para modo espejo de la imagen y que sea más natural para el usuario */
 }
 
 .recuadro-rostro {
@@ -68,6 +70,13 @@ h1 {
     margin: 20px 0;
     font-family: monospace;
     text-align: left;
+}
+
+#estado-registro {
+    font-size: 18px; /* Agranda considerablemente el texto para que sea más visible para personas con vision reducida */
+    font-weight: 700; /* Lo hace en negrita */
+    font-family: 'Segoe UI', Arial, sans-serif; /* Reemplaza la fuente monospace por una limpia y legible */
+    line-height: 1.4; /* Le da espacio a los textos largos para que no se amontonen */
 }
 
 #reloj-digital {
@@ -113,4 +122,26 @@ h1 {
 
 .boton-rojo:hover {
     background-color: #b01e2a;
+}
+
+/* Animación de efecto de obturador para simular el flash de la cámara al capturar la imagen*/
+@keyframes efectoObturador {
+    0% { 
+        opacity: 0; /* El video se vuelve completamente transparente al inicio para simular el destello del flash */
+        filter: brightness(3); /* Aumenta el brillo al máximo para simular el flash intenso */
+    }
+    15% {
+        opacity: 0.3; /* Aparece un destello inicial con algo de transparencia para simular el flash */
+        filter: brightness(2.5);
+    }
+    100% { 
+        opacity: 1; /* El video vuelve a su estado normal completamente visible */
+        filter: brightness(1); 
+    }
+}
+
+/* Aplica la animación de flash a los videos */
+#video-registro.camara-flash, #video-webcam.camara-flash {
+    /* Tiempo de 0.35 segundosn para que el efecto sea rápido pero perceptible */
+    animation: efectoObturador 0.35s ease-out;
 }
