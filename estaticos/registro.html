@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel - Registro de Personal</title>
+    <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+
+    <div class="tarjeta-asistencia">
+        <h1>Enrolamiento de Personal</h1>
+        <p class="subtitulo">Complete los datos y siga las instrucciones de la pantalla</p>
+
+        <div style="margin-bottom: 20px; text-align: left;">
+            <label style="font-weight: bold; font-size: 14px; color: #333;">RUT del Empleado:</label>
+            <input type="text" id="campo-rut" placeholder="Ej: 12345678-9" style="width: 100%; padding: 10px; margin: 8px 0 15px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;">
+            
+            <label style="font-weight: bold; font-size: 14px; color: #333;">Nombre Completo:</label>
+            <input type="text" id="campo-nombre" placeholder="Ej: Juan Pérez" style="width: 100%; padding: 10px; margin: 8px 0 5px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;">
+        </div>
+
+        <div class="contenedor-camara">
+            <video id="video-registro" autoplay playsinline muted></video>
+            <div class="recuadro-rostro"></div>
+        </div>
+
+        <div class="bloque-notificaciones">
+            <div id="estado-registro">Estado: Esperando datos del administrador...</div>
+        </div>
+
+        <button id="btn-captura" class="boton boton-verde" style="width: 100%;" onclick="iniciarCapturaBiometrica()">
+            Iniciar Captura Biométrica (5 Ángulos)
+        </button>
+    </div>
+
+    <script>
+        const video = document.getElementById('video-registro');
+        const componenteEstado = document.getElementById('estado-registro');
+        const botonCaptura = document.getElementById('btn-captura');
+
+        // Activa la webcam al cargar la vista
+        async function encenderWebcam() {
+            try {
+                const flujo = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = flujo;
+            } catch (err) {
+                console.error(err);
+                componenteEstado.innerText = "Estado: No se pudo acceder a la cámara";
+            }
+        }
+
+        const esperar = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+        async function iniciarCapturaBiometrica() {
+            const rut = document.getElementById('campo-rut').value.trim();
+            const nombre = document.getElementById('campo-nombre').value.trim();
+
+            if (!rut || !nombre) {
+                componenteEstado.innerText = "Estado: Debe ingresar el RUT y el Nombre antes de capturar";
+                componenteEstado.style.color = "#cb2431";
+                return;
+            }
+
+            botonCaptura.disabled = true;
+            componenteEstado.style.color = "#0066cc";
+
+            // Define las 5 instrucciones para los angulos solicitados
+            const instrucciones = [
+                "Mire fijamente de FRENTE",
+                "Gire levemente la cabeza a la IZQUIERDA",
+                "Gire levemente la cabeza a la DERECHA",
+                "Incline levemente la cabeza hacia ARRIBA",
+                "Incline levemente la cabeza hacia ABAJO"
+            ];
+
+            const fotosElegidas = [];
+            const lienzo = document.createElement('canvas');
+            
+            // Ciclo controlado basado en los 5 angulos de la lista
+            for (let i = 0; i < instrucciones.length; i++) {
+                componenteEstado.innerText = `Posición ${i + 1}/5: ${instrucciones[i]}`;
+                
+                // Espera 1 segundo para que el usuario pueda ajustar su posición antes de capturar la imagen
+                await esperar(1000);
+                
+                lienzo.width = video.videoWidth;
+                lienzo.height = video.videoHeight;
+                const contexto = lienzo.getContext('2d');
+                contexto.drawImage(video, 0, 0, lienzo.width, lienzo.height);
+
+                await new Promise((resolve) => {
+                    lienzo.toBlob((blob) => {
+                        if (blob) fotosElegidas.push(blob);
+                        resolve();
+                    }, 'image/jpeg', 0.9);
+                });
+            }
+
+            componenteEstado.innerText = "Estado: Procesando y empaquetando ráfaga de imágenes...";
+            const formulario = new FormData();
+            formulario.append('rut', rut);
+            formulario.append('nombre_completo', nombre);
+            
+            fotosElegidas.forEach((fotoBlob, indice) => {
+                formulario.append('fotos', fotoBlob, `angulo_${indice}.jpg`);
+            });
+
+            try {
+                componenteEstado.innerText = "Estado: Enviando ráfaga biométrica a Python...";
+                
+                const respuesta = await fetch('/registrar', {
+                    method: 'POST',
+                    body: formulario
+                });
+
+                const resultado = await respuesta.json();
+
+                if (respuesta.ok && resultado.estado === "exito") {
+                    componenteEstado.innerText = `Estado: OK - ${resultado.mensaje}`;
+                    componenteEstado.style.color = "#2ea44f";
+                    document.getElementById('campo-rut').value = "";
+                    document.getElementById('campo-nombre').value = "";
+                } else {
+                    componenteEstado.innerText = `Estado: Error - ${resultado.detalle || 'No se pudo registrar'}`;
+                    componenteEstado.style.color = "#cb2431";
+                }
+            } catch (error) {
+                console.error(error);
+                componenteEstado.innerText = "Estado: Error crítico de red con el servidor";
+                componenteEstado.style.color = "#cb2431";
+            } finally {
+                botonCaptura.disabled = false;
+            }
+        }
+
+        encenderWebcam();
+    </script>
+</body>
+</html>
