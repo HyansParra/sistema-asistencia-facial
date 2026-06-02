@@ -1,6 +1,6 @@
-import cv2
-import numpy as np
-from deepface import DeepFace
+import cv2 # OpenCV para procesar las imágenes recibidas y convertirlas al formato adecuado para DeepFace
+import numpy as np # numpy para manejar los vectores faciales como arrays numéricos
+from deepface import DeepFace # DeepFace para extraer los embeddings faciales usando el modelo Facenet
 
 def extraer_vector_rostro(archivos_bytes: bytes):
     """
@@ -24,7 +24,7 @@ def extraer_vector_rostro(archivos_bytes: bytes):
             enforce_detection=False
         )
         
-        # Extraemos el vector del rostro de 128 dimensiones
+        # Extraemos la lista de 128 números que representan el vector facial
         vector = analisis[0]["embedding"]
         return vector
 
