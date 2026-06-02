@@ -60,6 +60,26 @@ h1 {
     border-radius: 50%;
     box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4); /* para oscurecer los lados */
     pointer-events: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Estilos para el contador de segundos dentro del óvalo */
+#contador-oval {
+    position: absolute; /* Forzamos que flote sobre cualquier elemento */
+    top: 50%; /* Lo ubicamos al centro vertical */
+    left: 50%; /* Lo ubicamos al centro horizontal */
+    transform: translate(-50%, -50%); /* Ajuste preciso para centrar el número */
+    z-index: 10; /* Lo posiciona al frente del video */
+    font-size: 90px;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.65); /* Blanco con 65% de opacidad para que sea visible pero no moleste demasiado */
+    font-family: 'Segoe UI', Arial, sans-serif;
+    /* Agregamos un efecto de sombra para mejorar la legibilidad del número sobre el video, especialmente en fondos claros o con mucho detalle */
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5); 
+    user-select: none;
+    pointer-events: none; /* Evita interferencias con el mouse o clicks */
 }
 
 .bloque-notificaciones {
@@ -142,6 +162,6 @@ h1 {
 
 /* Aplica la animación de flash a los videos */
 #video-registro.camara-flash, #video-webcam.camara-flash {
-    /* Tiempo de 0.35 segundosn para que el efecto sea rápido pero perceptible */
+    /* Tiempo de 0.35 segundos para que el efecto sea rápido pero perceptible */
     animation: efectoObturador 0.35s ease-out;
 }

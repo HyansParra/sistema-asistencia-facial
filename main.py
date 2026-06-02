@@ -46,7 +46,7 @@ async def recibir_marca(foto: UploadFile = File(...), tipo_registro: str = Form(
     Recibe el archivo de imagen y el tipo de marca (ENTRADA/SALIDA) desde la interfaz web.
     """
     # Esto imprimirá la confirmación en terminal de VS Code
-    print(f"--> Solicitud recibida para Registro: {tipo_registro} | Archivo: {foto.filename}")
+    print(f"Solicitud recibida para Registro: {tipo_registro} | Archivo: {foto.filename}")
     
     return {
         "estado": "recibido", 
@@ -66,7 +66,7 @@ async def registrar_empleado(
     """
     vectores_extraidos = []
 
-    print(f"--> Iniciando enrolamiento para: {nombre_completo} ({rut}) | Procesando {len(fotos)} ángulos faciales...")
+    print(f"Iniciando registro para: {nombre_completo} ({rut}) | Procesando {len(fotos)} ángulos faciales...")
 
     for foto in fotos:
         try:
@@ -92,7 +92,7 @@ async def registrar_empleado(
     if resultado_bd:
         return {
             "estado": "exito",
-            "mensaje": f"Empleado {nombre_completo} enrolado exitosamente con perfil biométrico multiángulo"
+            "mensaje": f"Empleado {nombre_completo} registrado exitosamente"
         }
     else:
         return {"estado": "error", "detalle": "El RUT ya se encuentra registrado o hubo una falla al insertar en Supabase"}

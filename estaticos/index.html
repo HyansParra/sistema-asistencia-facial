@@ -11,7 +11,7 @@
     <div class="tarjeta-asistencia">
 
         <div style="text-align: right; width: 100%; margin-bottom: 10px;">
-            <a href="/estaticos/registro.html" style="font-size: 13px; color: #0066cc; text-decoration: none; font-weight: bold;">Ir a Enrolamiento</a>
+            <a href="/estaticos/registro.html" style="font-size: 13px; color: #0066cc; text-decoration: none; font-weight: bold;">Nuevo Registro</a>
         </div>
         
         <h1>Control de Asistencia</h1>
@@ -24,7 +24,7 @@
 
         <div class="bloque-notificaciones">
             <div id="reloj-digital">Fecha y Hora: Cargando...</div>
-            <div id="mensaje-servidor">Estado: Esperando acción...</div>
+            <div id="mensaje-servidor">Esperando acción...</div>
         </div>
 
         <div class="grupo-botones">
@@ -51,7 +51,7 @@
                 elementoVideo.srcObject = flujoVideo;
             } catch (error) {
                 console.error("Error en la cámara:", error);
-                elementoMensaje.innerText = "Estado: Error al conectar la cámara web";
+                elementoMensaje.innerText = "Error al conectar la cámara web";
             }
         }
 
@@ -70,7 +70,7 @@
 
         // Lógica para capturar el cuadro de la cámara y enviarlo a FastAPI
         async function procesarMarcaje(tipoRegistro) {
-            elementoMensaje.innerText = `Estado: Capturando rostro para ${tipoRegistro}...`;
+            elementoMensaje.innerText = `Capturando rostro para ${tipoRegistro}...`;
             elementoMensaje.style.color = "#0066cc";
 
             // lienzo temporal para dibujar el cuadro congelado de la cámara
@@ -84,7 +84,7 @@
             // Convertir la imagen congelada a un archivo binario JPEG
             lienzo.toBlob(async (blob) => {
                 if (!blob) {
-                    elementoMensaje.innerText = "Estado: Error al capturar la foto de la cámara";
+                    elementoMensaje.innerText = "Error al capturar la foto de la cámara";
                     elementoMensaje.style.color = "#cb2431";
                     return;
                 }
@@ -95,7 +95,7 @@
                 formulario.append('tipo_registro', tipoRegistro);
 
                 try {
-                    elementoMensaje.innerText = "Estado: Enviando datos al servidor...";
+                    elementoMensaje.innerText = "Enviando datos al servidor...";
                     
                     // Envía el formulario por método POST al backend
                     const respuesta = await fetch('/marcar', {
@@ -109,13 +109,13 @@
                         elementoMensaje.innerText = `Estado: ${datos.mensaje}`;
                         elementoMensaje.style.color = "#2ea44f"; // ltras verdes si sale bien
                     } else {
-                        elementoMensaje.innerText = `Estado: Error - ${datos.detalle || 'No se pudo procesar'}`;
+                        elementoMensaje.innerText = `Error - ${datos.detalle || 'No se pudo procesar'}`;
                         elementoMensaje.style.color = "#cb2431";
                     }
 
                 } catch (error) {
                     console.error("Error en la petición:", error);
-                    elementoMensaje.innerText = "Estado: Sin conexión con el servidor";
+                    elementoMensaje.innerText = "Sin conexión con el servidor";
                     elementoMensaje.style.color = "#cb2431";
                 }
             }, 'image/jpeg', 0.9);
