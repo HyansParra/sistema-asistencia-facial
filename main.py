@@ -53,6 +53,31 @@ async def recibir_marca(foto: UploadFile = File(...), tipo_registro: str = Form(
         "mensaje": f"Captura recibida con éxito para registrar {tipo_registro}"
     }
 
+# Endpoint para validar el acceso del administrador al panel de registro de empleados
+@app.post("/login")
+async def login_administrador(usuario: str = Form(...), clave: str = Form(...)):
+    """
+    Verifica las credenciales del administrador contra las variables configuradas en el archivo .env.
+    """
+    import os
+    # obtenemos los valores guardados de forma segura en memoria RAM
+    usuario_valido = os.getenv("ADMIN_USUARIO")
+    clave_valida = os.getenv("ADMIN_CLAVE")
+
+    print(f"Intento de inicio de sesión - Usuario proporcionado: {usuario}")
+
+    # Validación de credenciales con respuesta clara para el frontend
+    if usuario == usuario_valido and clave == clave_valida:
+        return {
+            "estado": "autorizado",
+            "mensaje": "Credenciales correctas"
+        }
+    else:
+        return {
+            "estado": "denegado",
+            "detalle": "El usuario o la contraseña no coinciden"
+        }
+
 # Endpoint para registrar un nuevo empleado con su vector facial promedio a partir de 5 fotos
 @app.post("/registrar")
 async def registrar_empleado(

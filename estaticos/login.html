@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso Administrador</title>
+    <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+
+    <div class="tarjeta-asistencia">
+        <h1>Ingreso Administrador</h1>
+        <p class="subtitulo">Inicie sesión para gestionar el registro de personal</p>
+
+        <div style="margin-bottom: 20px; text-align: left;">
+            <label style="font-weight: bold; font-size: 14px; color: #333; font-family: 'Segoe UI', Arial, sans-serif;">Correo:</label>
+            <input type="email" id="campo-correo" placeholder="ejemplo@correo.com" style="width: 100%; padding: 10px; margin: 8px 0 15px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;">
+            
+            <label style="font-weight: bold; font-size: 14px; color: #333; font-family: 'Segoe UI', Arial, sans-serif;">Contraseña:</label>
+            <input type="password" id="campo-clave" placeholder="••••••••" style="width: 100%; padding: 10px; margin: 8px 0 5px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;">
+        </div>
+
+        <div class="bloque-notificaciones">
+            <div id="mensaje-servidor">Esperando credenciales...</div>
+        </div>
+
+        <button class="boton boton-verde" style="width: 100%;" onclick="autenticarAdministrador()">
+            Iniciar Sesión
+        </button>
+        
+        <div style="margin-top: 15px;">
+            <a href="/estaticos/index.html" style="font-size: 13px; color: #666; text-decoration: none; font-family: 'Segoe UI', Arial, sans-serif;">Volver a registrar asistencia</a>
+        </div>
+    </div>
+
+    <script>
+        const elementoMensaje = document.getElementById('mensaje-servidor');
+
+        async function autenticarAdministrador() {
+            const correo = document.getElementById('campo-correo').value.trim();
+            const clave = document.getElementById('campo-clave').value;
+
+            if (!correo || !clave) {
+                elementoMensaje.innerText = "Por favor, complete ambos campos";
+                elementoMensaje.style.color = "#cb2431";
+                return;
+            }
+
+            elementoMensaje.innerText = "Verificando credenciales...";
+            elementoMensaje.style.color = "#0066cc";
+
+            // Formulario para enviar los datos al servidor
+            const formulario = new FormData();
+            formulario.append('usuario', correo);
+            formulario.append('clave', clave);
+
+            try {
+                const respuesta = await fetch('/login', {
+                    method: 'POST',
+                    body: formulario
+                });
+
+                const datos = await respuesta.json();
+
+                if (respuesta.ok && datos.estado === "autorizado") {
+                    elementoMensaje.innerText = "Acceso concedido, redirigiendo...";
+                    elementoMensaje.style.color = "#2ea44f";
+                    
+                    // redirigir al panel de administración después de un breve retraso
+                    // para que el usuario pueda ver el mensaje de éxito
+                    setTimeout(() => {
+                        window.location.href = "/estaticos/registro.html";
+                    }, 600);
+                } else {
+                    elementoMensaje.innerText = `Error: ${datos.detalle || 'Credenciales incorrectas'}`;
+                    elementoMensaje.style.color = "#cb2431";
+                }
+            } catch (error) {
+                console.error("Error en la conexión:", error);
+                elementoMensaje.innerText = "Error de comunicación con el servidor";
+                elementoMensaje.style.color = "#cb2431";
+            }
+        }
+    </script>
+</body>
+</html>
