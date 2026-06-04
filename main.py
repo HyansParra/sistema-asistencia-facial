@@ -40,36 +40,57 @@ def verificar_estado():
     """
     return {"estado": "operativo", "mensaje": "El servidor de asistencia funciona correctamente"}
 
+# endpoint principal para recibir la foto del marcador de asistencia, procesarla y registrar la marca en la base de datos
 @app.post("/marcar")
 async def recibir_marca(foto: UploadFile = File(...), tipo_registro: str = Form(...)):
     """
-    Procesa el fotograma en vivio del marcador, extrae sus facciones matematicas,
-    identifica al empledo en supabase y efectua el registro de asistencia.
+    Procesa el fotograma en vivo del marcador de asistencia, extrae sus facciones matemáticas,
+    identifica al empleado en Supabase y efectúa el registro de asistencia.
     """
     try:
-        contenido_bytes = await foto.read() 
-        vector_actual = reconociemiento.extraer_vector_rostro(contenido_bytes)
+        # leemos el contenido del archivo de imagen enviado en la petición y lo convertimos a bytes para su procesamiento
+        contenido_bytes = await foto.read()
+
+        # convertimos la imagen a un vector facial usando la función de reconocimiento facial basada en DeepFace
+        vector_actual = reconocimiento.extraer_vector_rostro(contenido_bytes)
         if vector_actual is None:
-            return {"estado": "error", "detalle": "No se puedo detectar un rostro legible"}
-        
-        coincidencia = conexion_bd.buscar_empleado_por_vector(vector_actual)
+            return {"estado": "error", "detalle": "No se pudo detectar un rostro legible en la imagen"}
+
+        # buscamos en la BD de Supabase una posible coincidencia con el vector facial extraído
+        coincidencia = conexion_bd.buscar_coincidencia_facial(vector_actual)
         if not coincidencia:
-            return{"estado": "error", "detalle": "Acceso denegado: rostro no registrado"}
-        
+            return {"estado": "error", "detalle": "Acceso denegado: Rostro no registrado en el sistema"}
+
+        # Extraemos los datos arrojados por nuestra función almacenada RPC
+        # La función RPC devuelve ID del empleado, RUT, nombre y distancia de coseno calculada entre el vector actual y el vector almacenado en la base de datos para esa persona
         empleado_id = coincidencia.get("id")
         rut_empleado = coincidencia.get("rut")
-        nombre_completo = coincidencia.get("nombre_completo")
+        nombre_empleado = coincidencia.get("nombre_completo")
         distancia_calculada = coincidencia.get("distancia")
 
-        print(f"Coincidencia encontrada: {nombre_empleado} ({rut_empleado})") | Distancia Coseno: {distancia_calculada:.4f}")
+        print(f"Coincidencia evaluada: {nombre_empleado} ({rut_empleado}) | Distancia Coseno: {distancia_calculada:.4f}")
 
+        # control de seguridad adicional 
+        # si la distancia de coseno es mayor a un umbral predefinido, se considera que no es una coincidencia confiable y se niega el acceso
         UMBRAL_CONFIANZA = 0.40
         if distancia_calculada > UMBRAL_CONFIANZA:
-            return {"estado": "error", "detalle": "Acceso denegado: rostro no coicide suficientemente"}
-        
-        resultado_asistencia = conexion_bd.registrar_marca_asistencia(empleado_id, ) 
+            return {"estado": "error", "detalle": "Acceso denegado: El rostro no coincide con el personal registrado"}
 
-   
+        # Si la identidad es confirmada, registra la marca de asistencia en la base de datos usando el ID del empleado y el tipo de registro (entrada o salida)
+        resultado_asistencia = conexion_bd.registrar_marca_asistencia(empleado_id, tipo_registro)
+        if not resultado_asistencia:
+            return {"estado": "error", "detalle": "Falla del sistema al almacenar el registro de asistencia"}
+
+        # Respondemos de forma exitosa indicando el nombre para actualizar el frontend
+        tipo_texto = "ENTRADA" if tipo_registro.upper() == "ENTRADA" else "SALIDA"
+        return {
+            "estado": "exito",
+            "mensaje": f"{tipo_texto} registrada correctamente para {nombre_empleado}"
+        }
+        # En caso de cualquier error inesperado durante el proceso, se responde con un mensaje de error genérico para evitar exponer detalles internos del servidor
+    except Exception as error:
+        print(f"Error crítico detectado en el módulo de asistencia: {error}")
+        return {"estado": "error", "detalle": "Ocurrió un inconveniente interno en el servidor"}
 
 # Endpoint para validar el acceso del administrador al panel de registro de empleados
 @app.post("/login")
