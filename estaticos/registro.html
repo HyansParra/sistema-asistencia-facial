@@ -69,6 +69,8 @@
             } catch (err) {
                 console.error(err);
                 componenteEstado.innerText = "No se pudo acceder a la cámara";
+                componenteEstado.style.color = "#FF0000";
+                componenteEstado.style.fontWeight = "700";
             }
         }
 
@@ -80,7 +82,7 @@
             // Valida que el administrador haya ingresado ambos campos antes de iniciar el proceso
             if (!rut || !nombre) {
                 componenteEstado.innerText = "Debe ingresar el RUT y el Nombre antes de capturar";
-                componenteEstado.style.color = "#cb2431";
+                componenteEstado.style.color = "#FF0000";
                 return;
             }
 
@@ -170,12 +172,14 @@
                     campoNombre.value = "";
                 } else {
                     componenteEstado.innerText = `Error - ${resultado.detalle || 'No se pudo registrar'}`;
-                    componenteEstado.style.color = "#cb2431";
+                    componenteEstado.style.color = "#FF0000";
+                    componenteEstado.style.fontWeight = "700";
                 }
             } catch (error) {
                 console.error(error);
                 componenteEstado.innerText = "Error crítico de red con el servidor";
-                componenteEstado.style.color = "#cb2431";
+                componenteEstado.style.color = "#FF0000";
+                componenteEstado.style.fontWeight = "700";
             } finally {
                 // Restablecemos las variables de control globales para el siguiente empleado
                 pasoActual = -1;

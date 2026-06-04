@@ -29,7 +29,7 @@
         </button>
         
         <div style="margin-top: 15px;">
-            <a href="/estaticos/index.html" style="font-size: 13px; color: #666; text-decoration: none; font-family: 'Segoe UI', Arial, sans-serif;">Volver a registrar asistencia</a>
+            <a href="/estaticos/index.html" style="font-size: 13px; color: #0066cc; text-decoration: none; font-family: 'Segoe UI', Arial, sans-serif;">Volver a registrar asistencia</a>
         </div>
     </div>
 
@@ -42,7 +42,8 @@
 
             if (!correo || !clave) {
                 elementoMensaje.innerText = "Por favor, complete ambos campos";
-                elementoMensaje.style.color = "#cb2431";
+                elementoMensaje.style.color = "#FF0000";
+                elementoMensaje.style.fontWeight = "700";
                 return;
             }
 
@@ -65,7 +66,8 @@
                 if (respuesta.ok && datos.estado === "autorizado") {
                     elementoMensaje.innerText = "Acceso concedido, redirigiendo...";
                     elementoMensaje.style.color = "#2ea44f";
-                    
+                    elementoMensaje.style.fontWeight = "700";
+
                     // redirigir al panel de administración después de un breve retraso
                     // para que el usuario pueda ver el mensaje de éxito
                     setTimeout(() => {
@@ -73,12 +75,14 @@
                     }, 600);
                 } else {
                     elementoMensaje.innerText = `Error: ${datos.detalle || 'Credenciales incorrectas'}`;
-                    elementoMensaje.style.color = "#cb2431";
+                    elementoMensaje.style.color = "#FF0000";
+                    elementoMensaje.style.fontWeight = "700";
                 }
             } catch (error) {
                 console.error("Error en la conexión:", error);
                 elementoMensaje.innerText = "Error de comunicación con el servidor";
-                elementoMensaje.style.color = "#cb2431";
+                elementoMensaje.style.color = "#FF0000";
+                elementoMensaje.style.fontWeight = "700";
             }
         }
     </script>

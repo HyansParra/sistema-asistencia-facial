@@ -43,15 +43,33 @@ def verificar_estado():
 @app.post("/marcar")
 async def recibir_marca(foto: UploadFile = File(...), tipo_registro: str = Form(...)):
     """
-    Recibe el archivo de imagen y el tipo de marca (ENTRADA/SALIDA) desde la interfaz web.
+    Procesa el fotograma en vivio del marcador, extrae sus facciones matematicas,
+    identifica al empledo en supabase y efectua el registro de asistencia.
     """
-    # Esto imprimirá la confirmación en terminal de VS Code
-    print(f"Solicitud recibida para Registro: {tipo_registro} | Archivo: {foto.filename}")
-    
-    return {
-        "estado": "recibido", 
-        "mensaje": f"Captura recibida con éxito para registrar {tipo_registro}"
-    }
+    try:
+        contenido_bytes = await foto.read() 
+        vector_actual = reconociemiento.extraer_vector_rostro(contenido_bytes)
+        if vector_actual is None:
+            return {"estado": "error", "detalle": "No se puedo detectar un rostro legible"}
+        
+        coincidencia = conexion_bd.buscar_empleado_por_vector(vector_actual)
+        if not coincidencia:
+            return{"estado": "error", "detalle": "Acceso denegado: rostro no registrado"}
+        
+        empleado_id = coincidencia.get("id")
+        rut_empleado = coincidencia.get("rut")
+        nombre_completo = coincidencia.get("nombre_completo")
+        distancia_calculada = coincidencia.get("distancia")
+
+        print(f"Coincidencia encontrada: {nombre_empleado} ({rut_empleado})") | Distancia Coseno: {distancia_calculada:.4f}")
+
+        UMBRAL_CONFIANZA = 0.40
+        if distancia_calculada > UMBRAL_CONFIANZA:
+            return {"estado": "error", "detalle": "Acceso denegado: rostro no coicide suficientemente"}
+        
+        resultado_asistencia = conexion_bd.registrar_marca_asistencia(empleado_id, ) 
+
+   
 
 # Endpoint para validar el acceso del administrador al panel de registro de empleados
 @app.post("/login")

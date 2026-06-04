@@ -24,7 +24,7 @@
 
         <div class="bloque-notificaciones">
             <div id="reloj-digital">Fecha y Hora: Cargando...</div>
-            <div id="mensaje-servidor">Esperando acción...</div>
+            <div id="mensaje-servidor">Esperando Registro...</div>
         </div>
 
         <div class="grupo-botones">
@@ -52,6 +52,8 @@
             } catch (error) {
                 console.error("Error en la cámara:", error);
                 elementoMensaje.innerText = "Error al conectar la cámara web";
+                elementoMensaje.style.color = "#FF0000"; // Color Rojo para errores
+                elementoMensaje.style.fontWeight = "700"; // Texto en negrita para destacar el error
             }
         }
 
@@ -85,7 +87,8 @@
             lienzo.toBlob(async (blob) => {
                 if (!blob) {
                     elementoMensaje.innerText = "Error al capturar la foto de la cámara";
-                    elementoMensaje.style.color = "#cb2431";
+                    elementoMensaje.style.color = "#FF0000";
+                    elementoMensaje.style.fontWeight = "700";
                     return;
                 }
 
@@ -108,15 +111,18 @@
                     if (respuesta.ok) {
                         elementoMensaje.innerText = `Estado: ${datos.mensaje}`;
                         elementoMensaje.style.color = "#2ea44f"; // ltras verdes si sale bien
+                        elementoMensaje.style.fontWeight = "700";
                     } else {
                         elementoMensaje.innerText = `Error - ${datos.detalle || 'No se pudo procesar'}`;
-                        elementoMensaje.style.color = "#cb2431";
+                        elementoMensaje.style.color = "#FF0000";
+                        elementoMensaje.style.fontWeight = "700";
                     }
 
                 } catch (error) {
                     console.error("Error en la petición:", error);
                     elementoMensaje.innerText = "Sin conexión con el servidor";
-                    elementoMensaje.style.color = "#cb2431";
+                    elementoMensaje.style.color = "#FF0000";
+                    elementoMensaje.style.fontWeight = "700";
                 }
             }, 'image/jpeg', 0.9);
         }
