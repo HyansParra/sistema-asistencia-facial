@@ -41,12 +41,27 @@
     </div>
 
     <script>
+        // Referencias a elementos del DOM para control de flujo y actualización de UI
         const video = document.getElementById('video-registro');
         const componenteEstado = document.getElementById('estado-registro');
         const botonCaptura = document.getElementById('btn-captura');
         const contadorEnOval = document.getElementById('contador-oval');
+        const campoRut = document.getElementById('campo-rut');
+        const campoNombre = document.getElementById('campo-nombre');
 
-        // Activa la webcam al cargar la vista
+        // Define las instrucciones para cada una de las 5 perspectivas que el administrador debe capturar
+        const instrucciones = [
+            "Mire fijamente de FRENTE",
+            "Gire levemente la cabeza a la IZQUIERDA",
+            "Gire levemente la cabeza a la DERECHA",
+            "Incline levemente la cabeza hacia ARRIBA",
+            "Incline levemente la cabeza hacia ABAJO"
+        ];
+
+        let pasoActual = -1; // Controla la fase actual del proceso de captura desde -1 que es antes de iniciar, hasta 4 que es la última foto
+        let fotosElegidas = [];
+
+        // Activa la webcam y muestra el video en vivo
         async function encenderWebcam() {
             try {
                 const flujo = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -57,66 +72,77 @@
             }
         }
 
-        const esperar = ms => new Promise(resolve => setTimeout(resolve, ms));
-
+        // Función principal que maneja el proceso de captura biométrica en fases, guiando al administrador paso a paso
         async function iniciarCapturaBiometrica() {
-            const rut = document.getElementById('campo-rut').value.trim();
-            const nombre = document.getElementById('campo-nombre').value.trim();
+            const rut = campoRut.value.trim();
+            const nombre = campoNombre.value.trim();
 
+            // Valida que el administrador haya ingresado ambos campos antes de iniciar el proceso
             if (!rut || !nombre) {
                 componenteEstado.innerText = "Debe ingresar el RUT y el Nombre antes de capturar";
                 componenteEstado.style.color = "#cb2431";
                 return;
             }
 
-            botonCaptura.disabled = true;
-            componenteEstado.style.color = "#0066cc";
+            // Fase de inicio del proceso: Configura el entorno para la captura de fotos y guía al usuario al primer paso
+            if (pasoActual === -1) {
+                // bloquea el imput para que el rut y nombre no se puedan modificar durante el proceso de captura
+                campoRut.disabled = true;
+                campoNombre.disabled = true;
+                fotosElegidas = [];
+                pasoActual = 0;
 
-            // Define las 5 instrucciones para los angulos solicitados
-            const instrucciones = [
-                "Mire fijamente de FRENTE",
-                "Gire levemente la cabeza a la IZQUIERDA",
-                "Gire levemente la cabeza a la DERECHA",
-                "Incline levemente la cabeza hacia ARRIBA",
-                "Incline levemente la cabeza hacia ABAJO"
-            ];
-
-            const fotosElegidas = [];
-            const lienzo = document.createElement('canvas');
-            
-            // Ciclo controlado basado en los 5 ángulos solicitados, con conteo regresivo visible para el usuario antes de cada captura
-            for (let i = 0; i < instrucciones.length; i++) {
-        
-                for (let segundos = 5; segundos > 0; segundos--) {
-                    componenteEstado.innerText = `Posición ${i + 1}/5: ${instrucciones[i]} - Captura en ${segundos}...`;
-                    contadorEnOval.innerText = segundos; // Agrega el número al óvalo traslúcido
-                    await esperar(1000); // Espera 1 segundo antes de actualizar el mensaje y continuar el conteo regresivo
-                }
-                
-                contadorEnOval.innerText = ""; // Limpia el número del óvalo antes de la captura
-                
-                // Efecto visual de captura: agrega una clase CSS que simula un flash en la cámara para indicar que se está tomando la foto
-                video.classList.add('camara-flash');
-    
-                // Quitamos el efecto de flash después de un breve momento para que el usuario pueda ver claramente la captura
-                setTimeout(() => {
-                    video.classList.remove('camara-flash');
-                }, 350);
-                
-                lienzo.width = video.videoWidth;
-                lienzo.height = video.videoHeight;
-                const contexto = lienzo.getContext('2d');
-                contexto.drawImage(video, 0, 0, lienzo.width, lienzo.height);
-
-                await new Promise((resolve) => {
-                    lienzo.toBlob((blob) => {
-                        if (blob) fotosElegidas.push(blob);
-                        resolve();
-                    }, 'image/jpeg', 0.9);
-                });
+                // actualiza la interfaz para mostrar la primera instrucción y preparar al usuario para la captura manual de la primera foto
+                componenteEstado.innerText = `Posición 1/5: ${instrucciones[pasoActual]}. Acomódese y presione el botón.`;
+                componenteEstado.style.color = "#0066cc";
+                contadorEnOval.innerText = "1";
+                botonCaptura.innerText = "Tomar Foto (1/5)";
+                return;
             }
 
-            componenteEstado.innerText = "Procesando datos de registro...";
+            // fase de captura manual: cada vez que el usuario presiona el botón
+            // realiza un efecto de flash para simular la captura de la foto
+            video.classList.add('camara-flash');
+            setTimeout(() => {
+                video.classList.remove('camara-flash');
+            }, 350);
+
+            // creamos un lienzo temporal para capturar el fotograma actual del video y convertirlo en una imagen
+            const lienzo = document.createElement('canvas');
+            lienzo.width = video.videoWidth;
+            lienzo.height = video.videoHeight;
+            const contexto = lienzo.getContext('2d');
+            contexto.drawImage(video, 0, 0, lienzo.width, lienzo.height);
+
+            // convertimos el lienzo a un blob de imagen JPEG y lo almacenamos en el array de fotos elegidas para su posterior envío al servidor
+            await new Promise((resolve) => {
+                lienzo.toBlob((blob) => {
+                    if (blob) fotosElegidas.push(blob);
+                    resolve();
+                }, 'image/jpeg', 0.9);
+            });
+
+            // incrementamos el paso actual para avanzar a la siguiente instrucción o finalizar el proceso si ya se capturaron las 5 fotos
+            pasoActual++;
+
+            if (pasoActual < instrucciones.length) {
+                // Si quedan ángulos pendientes, actualiza la guía y espera el clic del usuario
+                componenteEstado.innerText = `Posición ${pasoActual + 1}/5: ${instrucciones[pasoActual]}. Presione para capturar.`;
+                contadorEnOval.innerText = pasoActual + 1;
+                botonCaptura.innerText = `Tomar Foto (${pasoActual + 1}/5)`;
+            } else {
+                // Si ya capturó las 5 fotos, procesa el envío masivo
+                await enviarRáfagaAlServidor(rut, nombre);
+            }
+        }
+
+        // Envía el formulario final acumulado al backend de FastAPI
+        async function enviarRáfagaAlServidor(rut, nombre) {
+            botonCaptura.disabled = true;
+            contadorEnOval.innerText = "";
+            componenteEstado.innerText = "Procesando y empaquetando ráfaga de imágenes...";
+            componenteEstado.style.color = "#0066cc";
+
             const formulario = new FormData();
             formulario.append('rut', rut);
             formulario.append('nombre_completo', nombre);
@@ -138,8 +164,10 @@
                 if (respuesta.ok && resultado.estado === "exito") {
                     componenteEstado.innerText = `OK - ${resultado.mensaje}`;
                     componenteEstado.style.color = "#2ea44f";
-                    document.getElementById('campo-rut').value = "";
-                    document.getElementById('campo-nombre').value = "";
+                    
+                    // Limpiamos el formulario si todo salió bien
+                    campoRut.value = "";
+                    campoNombre.value = "";
                 } else {
                     componenteEstado.innerText = `Error - ${resultado.detalle || 'No se pudo registrar'}`;
                     componenteEstado.style.color = "#cb2431";
@@ -149,11 +177,16 @@
                 componenteEstado.innerText = "Error crítico de red con el servidor";
                 componenteEstado.style.color = "#cb2431";
             } finally {
+                // Restablecemos las variables de control globales para el siguiente empleado
+                pasoActual = -1;
+                fotosElegidas = [];
+                campoRut.disabled = false;
+                campoNombre.disabled = false;
                 botonCaptura.disabled = false;
+                botonCaptura.innerText = "Iniciar Capturas";
             }
         }
 
+        // Inicia la webcam al cargar la página para que el video esté listo cuando el usuario comience el proceso de captura
         encenderWebcam();
     </script>
-</body>
-</html>
