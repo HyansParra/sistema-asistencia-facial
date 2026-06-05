@@ -25,13 +25,22 @@
             <input type="text" id="campo-nombre" placeholder="Ej: Juan Pérez" style="width: 100%; padding: 10px; margin: 8px 0 5px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;">
         </div>
 
+        <!-- Indicador visual de 5 pasos/puntos de progreso -->
+        <div class="contenedor-pasos">
+            <div class="paso-dot" id="dot-0">1</div>
+            <div class="paso-dot" id="dot-1">2</div>
+            <div class="paso-dot" id="dot-2">3</div>
+            <div class="paso-dot" id="dot-3">4</div>
+            <div class="paso-dot" id="dot-4">5</div>
+        </div>
+
         <div class="contenedor-camara">
             <video id="video-registro" autoplay playsinline muted></video>
             <div class="recuadro-rostro"></div>
             <div id="contador-oval"></div>
         </div>
 
-        <div class="bloque-notificaciones">
+        <div id="contenedor-notif" class="bloque-notificaciones">
             <div id="estado-registro">Por favor, ingrese el RUT y nombre para comenzar...</div>
         </div>
 
@@ -43,6 +52,7 @@
     <script>
         // Referencias a elementos del DOM para control de flujo y actualización de UI
         const video = document.getElementById('video-registro');
+        const componenteContenedorNotif = document.getElementById('contenedor-notif');
         const componenteEstado = document.getElementById('estado-registro');
         const botonCaptura = document.getElementById('btn-captura');
         const contadorEnOval = document.getElementById('contador-oval');
@@ -61,6 +71,24 @@
         let pasoActual = -1; // Controla la fase actual del proceso de captura desde -1 que es antes de iniciar, hasta 4 que es la última foto
         let fotosElegidas = [];
 
+        // Función auxiliar encargada de refrescar la estética de los 5 círculos en tiempo real
+        function actualizarPasosVisuales() {
+            for (let i = 0; i < instrucciones.length; i++) {
+                const dot = document.getElementById(`dot-${i}`);
+                dot.classList.remove('activo', 'completado');
+                
+                if (i === pasoActual) {
+                    dot.classList.add('activo');
+                    dot.innerText = i + 1;
+                } else if (i < pasoActual) {
+                    dot.classList.add('completado');
+                    dot.innerText = "✓";
+                } else {
+                    dot.innerText = i + 1;
+                }
+            }
+        }
+
         // Activa la webcam y muestra el video en vivo
         async function encenderWebcam() {
             try {
@@ -71,6 +99,7 @@
                 componenteEstado.innerText = "No se pudo acceder a la cámara";
                 componenteEstado.style.color = "#FF0000";
                 componenteEstado.style.fontWeight = "700";
+                componenteContenedorNotif.className = "bloque-notificaciones estado-error";
             }
         }
 
@@ -83,6 +112,7 @@
             if (!rut || !nombre) {
                 componenteEstado.innerText = "Debe ingresar el RUT y el Nombre antes de capturar";
                 componenteEstado.style.color = "#FF0000";
+                componenteContenedorNotif.className = "bloque-notificaciones estado-error";
                 return;
             }
 
@@ -95,10 +125,12 @@
                 pasoActual = 0;
 
                 // actualiza la interfaz para mostrar la primera instrucción y preparar al usuario para la captura manual de la primera foto
+                componenteContenedorNotif.className = "bloque-notificaciones estado-info";
                 componenteEstado.innerText = `Posición 1/5: ${instrucciones[pasoActual]}. Acomódese y presione el botón.`;
                 componenteEstado.style.color = "#0066cc";
                 contadorEnOval.innerText = "1";
                 botonCaptura.innerText = "Tomar Foto (1/5)";
+                actualizarPasosVisuales();
                 return;
             }
 
@@ -128,12 +160,16 @@
             pasoActual++;
 
             if (pasoActual < instrucciones.length) {
-                // Si quedan ángulos pendientes, actualiza la guía y espera el clic del usuario
+                // Si quedán ángulos pendientes, actualiza la guía y espera el clic del usuario
+                componenteContenedorNotif.className = "bloque-notificaciones estado-info";
                 componenteEstado.innerText = `Posición ${pasoActual + 1}/5: ${instrucciones[pasoActual]}. Presione para capturar.`;
                 contadorEnOval.innerText = pasoActual + 1;
                 botonCaptura.innerText = `Tomar Foto (${pasoActual + 1}/5)`;
+                actualizarPasosVisuales();
             } else {
                 // Si ya capturó las 5 fotos, procesa el envío masivo
+                contadorEnOval.innerText = "";
+                actualizarPasosVisuales();
                 await enviarRáfagaAlServidor(rut, nombre);
             }
         }
@@ -142,6 +178,7 @@
         async function enviarRáfagaAlServidor(rut, nombre) {
             botonCaptura.disabled = true;
             contadorEnOval.innerText = "";
+            componenteContenedorNotif.className = "bloque-notificaciones estado-info";
             componenteEstado.innerText = "Procesando y empaquetando ráfaga de imágenes...";
             componenteEstado.style.color = "#0066cc";
 
@@ -164,6 +201,7 @@
                 const resultado = await respuesta.json();
 
                 if (respuesta.ok && resultado.estado === "exito") {
+                    componenteContenedorNotif.className = "bloque-notificaciones estado-exito";
                     componenteEstado.innerText = `OK - ${resultado.mensaje}`;
                     componenteEstado.style.color = "#2ea44f";
                     
@@ -171,12 +209,14 @@
                     campoRut.value = "";
                     campoNombre.value = "";
                 } else {
+                    componenteContenedorNotif.className = "bloque-notificaciones estado-error";
                     componenteEstado.innerText = `Error - ${resultado.detalle || 'No se pudo registrar'}`;
                     componenteEstado.style.color = "#FF0000";
                     componenteEstado.style.fontWeight = "700";
                 }
             } catch (error) {
                 console.error(error);
+                componenteContenedorNotif.className = "bloque-notificaciones estado-error";
                 componenteEstado.innerText = "Error crítico de red con el servidor";
                 componenteEstado.style.color = "#FF0000";
                 componenteEstado.style.fontWeight = "700";
@@ -188,9 +228,24 @@
                 campoNombre.disabled = false;
                 botonCaptura.disabled = false;
                 botonCaptura.innerText = "Iniciar Capturas";
+
+                // Limpia los círculos visuales regresándolos al estado inicial neutro tras una breve pausa
+                setTimeout(() => {
+                    if (campoRut.value === "") {
+                        for (let i = 0; i < instrucciones.length; i++) {
+                            const dot = document.getElementById(`dot-${i}`);
+                            dot.classList.remove('activo', 'completado');
+                            dot.innerText = i + 1;
+                        }
+                        componenteContenedorNotif.className = "bloque-notificaciones";
+                        componenteEstado.innerText = "Por favor, ingrese el RUT y nombre para comenzar...";
+                    }
+                }, 4000);
             }
         }
 
         // Inicia la webcam al cargar la página para que el video esté listo cuando el usuario comience el proceso de captura
         encenderWebcam();
     </script>
+</body>
+</html>

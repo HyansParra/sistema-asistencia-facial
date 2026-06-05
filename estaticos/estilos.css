@@ -165,3 +165,60 @@ h1 {
     /* Tiempo de 0.35 segundos para que el efecto sea rápido pero perceptible */
     animation: efectoObturador 0.35s ease-out;
 }
+
+/* Contenedor de las 5 burbujas de progreso de registro */
+.contenedor-pasos {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin: 15px 0 20px 0;
+}
+
+/* Estado base de cada burbuja pendiente */
+.paso-dot {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background-color: #e9ecef;
+    border: 2px solid #dee2e6;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 13px;
+    font-weight: bold;
+    color: #6c757d;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Estado de la burbuja activa */
+.paso-dot.activo {
+    background-color: #e7f5ff;
+    border-color: #0066cc;
+    color: #0066cc;
+    transform: scale(1.15);
+    box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.15);
+}
+
+/* Estado de las burbujas completadas */
+.paso-dot.completado {
+    background-color: #2ea44f;
+    border-color: #2ea44f;
+    color: #ffffff;
+    transform: scale(1);
+}
+
+/* Modificadores dinámicos para el bloque de alertas */
+.bloque-notificaciones.estado-info {
+    background-color: #f1f7ff;
+    border-color: #bce0ff;
+}
+
+.bloque-notificaciones.estado-exito {
+    background-color: #f2fbf4;
+    border-color: #caeed3;
+}
+
+.bloque-notificaciones.estado-error {
+    background-color: #fff5f5;
+    border-color: #ffc9c9;
+}
