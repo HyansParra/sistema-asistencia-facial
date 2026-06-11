@@ -103,12 +103,12 @@
             }
         }
 
-        // Función principal que maneja el proceso de captura biométrica en fases, guiando al administrador paso a paso
+        // Controla todo el flujo de captura por pasos y valida los datos
         async function iniciarCapturaBiometrica() {
             const rut = campoRut.value.trim();
             const nombre = campoNombre.value.trim();
 
-            // Valida que el administrador haya ingresado ambos campos antes de iniciar el proceso
+            // Validar que las cajas de texto no estén vacías
             if (!rut || !nombre) {
                 componenteEstado.innerText = "Debe ingresar el RUT y el Nombre antes de capturar";
                 componenteEstado.style.color = "#FF0000";
@@ -116,15 +116,49 @@
                 return;
             }
 
-            // Fase de inicio del proceso: Configura el entorno para la captura de fotos y guía al usuario al primer paso
+            // Antes de empezar a sacar fotos, validamos el RUT y duplicados en el servidor
             if (pasoActual === -1) {
-                // bloquea el imput para que el rut y nombre no se puedan modificar durante el proceso de captura
+                botonCaptura.disabled = true;
+                componenteContenedorNotif.className = "bloque-notificaciones estado-info";
+                componenteEstado.innerText = "Verificando datos en el sistema...";
+                componenteEstado.style.color = "#0066cc";
+
+                try {
+                    const formularioVerificar = new FormData();
+                    formularioVerificar.append('rut', rut);
+                    formularioVerificar.append('nombre_completo', nombre);
+
+                    const respuestaVerificar = await fetch('/verificar-datos', {
+                        method: 'POST',
+                        body: formularioVerificar
+                    });
+
+                    const resultadoVerificar = await respuestaVerificar.json();
+
+                    // Si el servidor rebota los datos por RUT inválido o nombre repetido, frenamos todo
+                    if (!respuestaVerificar.ok || resultadoVerificar.estado !== "exito") {
+                        componenteContenedorNotif.className = "bloque-notificaciones estado-error";
+                        componenteEstado.innerText = `Error - ${resultadoVerificar.detalle || 'Datos inválidos'}`;
+                        componenteEstado.style.color = "#FF0000";
+                        botonCaptura.disabled = false;
+                        return;
+                    }
+                } catch (error) {
+                    console.error(error);
+                    componenteContenedorNotif.className = "bloque-notificaciones estado-error";
+                    componenteEstado.innerText = "Error de comunicación con el servidor al validar datos";
+                    componenteEstado.style.color = "#FF0000";
+                    botonCaptura.disabled = false;
+                    return;
+                }
+
+                // Si los datos están limpios, bloqueamos los campos y preparamos la primera foto
+                botonCaptura.disabled = false;
                 campoRut.disabled = true;
                 campoNombre.disabled = true;
                 fotosElegidas = [];
                 pasoActual = 0;
 
-                // actualiza la interfaz para mostrar la primera instrucción y preparar al usuario para la captura manual de la primera foto
                 componenteContenedorNotif.className = "bloque-notificaciones estado-info";
                 componenteEstado.innerText = `Posición 1/5: ${instrucciones[pasoActual]}. Acomódese y presione el botón.`;
                 componenteEstado.style.color = "#0066cc";
@@ -134,21 +168,20 @@
                 return;
             }
 
-            // fase de captura manual: cada vez que el usuario presiona el botón
-            // realiza un efecto de flash para simular la captura de la foto
+            // Efecto visual de flash al capturar la foto
             video.classList.add('camara-flash');
             setTimeout(() => {
                 video.classList.remove('camara-flash');
             }, 350);
 
-            // creamos un lienzo temporal para capturar el fotograma actual del video y convertirlo en una imagen
+            // Canvas temporal para congelar el cuadro del video
             const lienzo = document.createElement('canvas');
             lienzo.width = video.videoWidth;
             lienzo.height = video.videoHeight;
             const contexto = lienzo.getContext('2d');
             contexto.drawImage(video, 0, 0, lienzo.width, lienzo.height);
 
-            // convertimos el lienzo a un blob de imagen JPEG y lo almacenamos en el array de fotos elegidas para su posterior envío al servidor
+            // Convertir a blob JPEG y guardar en el arreglo
             await new Promise((resolve) => {
                 lienzo.toBlob((blob) => {
                     if (blob) fotosElegidas.push(blob);
@@ -156,25 +189,24 @@
                 }, 'image/jpeg', 0.9);
             });
 
-            // incrementamos el paso actual para avanzar a la siguiente instrucción o finalizar el proceso si ya se capturaron las 5 fotos
             pasoActual++;
 
             if (pasoActual < instrucciones.length) {
-                // Si quedán ángulos pendientes, actualiza la guía y espera el clic del usuario
+                // Siguiente ángulo en la lista
                 componenteContenedorNotif.className = "bloque-notificaciones estado-info";
                 componenteEstado.innerText = `Posición ${pasoActual + 1}/5: ${instrucciones[pasoActual]}. Presione para capturar.`;
                 contadorEnOval.innerText = pasoActual + 1;
                 botonCaptura.innerText = `Tomar Foto (${pasoActual + 1}/5)`;
                 actualizarPasosVisuales();
             } else {
-                // Si ya capturó las 5 fotos, procesa el envío masivo
+                // Al completar las 5 fotos, se envía la ráfaga completa
                 contadorEnOval.innerText = "";
                 actualizarPasosVisuales();
                 await enviarRáfagaAlServidor(rut, nombre);
             }
         }
 
-        // Envía el formulario final acumulado al backend de FastAPI
+        // Envía las 5 fotos guardadas en memoria al backend
         async function enviarRáfagaAlServidor(rut, nombre) {
             botonCaptura.disabled = true;
             contadorEnOval.innerText = "";
@@ -205,7 +237,6 @@
                     componenteEstado.innerText = `OK - ${resultado.mensaje}`;
                     componenteEstado.style.color = "#2ea44f";
                     
-                    // Limpiamos el formulario si todo salió bien
                     campoRut.value = "";
                     campoNombre.value = "";
                 } else {
@@ -221,7 +252,7 @@
                 componenteEstado.style.color = "#FF0000";
                 componenteEstado.style.fontWeight = "700";
             } finally {
-                // Restablecemos las variables de control globales para el siguiente empleado
+                // Reset de variables para dejar todo listo para el siguiente empleado
                 pasoActual = -1;
                 fotosElegidas = [];
                 campoRut.disabled = false;
@@ -229,7 +260,7 @@
                 botonCaptura.disabled = false;
                 botonCaptura.innerText = "Iniciar Capturas";
 
-                // Limpia los círculos visuales regresándolos al estado inicial neutro tras una breve pausa
+                // Limpieza de las burbujas visuales después de unos segundos
                 setTimeout(() => {
                     if (campoRut.value === "") {
                         for (let i = 0; i < instrucciones.length; i++) {
@@ -244,7 +275,7 @@
             }
         }
 
-        // Inicia la webcam al cargar la página para que el video esté listo cuando el usuario comience el proceso de captura
+        // Inicia la webcam al cargar la página
         encenderWebcam();
     </script>
 </body>

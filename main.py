@@ -119,6 +119,25 @@ async def login_administrador(usuario: str = Form(...), clave: str = Form(...)):
             "estado": "denegado",
             "detalle": "El usuario o la contraseña no coinciden"
         }
+    
+# Endpoint para verificar los datos antes de permitir que se tomen las fotos
+@app.post("/verificar-datos")
+async def verificar_datos_registro(rut: str = Form(...), nombre_completo: str = Form(...)):
+    """
+    Valida el RUT y busca duplicados antes de iniciar el flujo de la cámara.
+    """
+    # Verifica si el RUT es válido
+    if not validaciones.validar_rut_chileno(rut):
+        return {"estado": "error", "detalle": "El RUT ingresado no es válido o el dígito verificador es incorrecto"}
+        
+    rut_formateado = validaciones.formatear_rut(rut)
+    
+    # Verifica si el RUT o el nombre ya existen
+    mensaje_duplicado = conexion_bd.verificar_duplicados_empleado(rut_formateado, nombre_completo)
+    if mensaje_duplicado:
+        return {"estado": "error", "detalle": mensaje_duplicado}
+        
+    return {"estado": "exito", "mensaje": "Datos correctos para iniciar capturas"}
 
 # Endpoint para registrar empleados usando el promedio de 5 fotos
 @app.post("/registrar")
