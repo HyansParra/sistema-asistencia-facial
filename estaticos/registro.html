@@ -25,7 +25,6 @@
             <input type="text" id="campo-nombre" placeholder="Ej: Juan Pérez" style="width: 100%; padding: 10px; margin: 8px 0 5px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;">
         </div>
 
-        <!-- Indicador visual de 5 pasos/puntos de progreso -->
         <div class="contenedor-pasos">
             <div class="paso-dot" id="dot-0">1</div>
             <div class="paso-dot" id="dot-1">2</div>
@@ -70,6 +69,7 @@
 
         let pasoActual = -1; // Controla la fase actual del proceso de captura desde -1 que es antes de iniciar, hasta 4 que es la última foto
         let fotosElegidas = [];
+        let camaraActiva = false; // Bandera de control para validar el estado del hardware de video
 
         // Función auxiliar encargada de refrescar la estética de los 5 círculos en tiempo real
         function actualizarPasosVisuales() {
@@ -94,8 +94,10 @@
             try {
                 const flujo = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = flujo;
+                camaraActiva = true;
             } catch (err) {
                 console.error(err);
+                camaraActiva = false;
                 componenteEstado.innerText = "No se pudo acceder a la cámara";
                 componenteEstado.style.color = "#FF0000";
                 componenteEstado.style.fontWeight = "700";
@@ -111,6 +113,14 @@
             // Validar que las cajas de texto no estén vacías
             if (!rut || !nombre) {
                 componenteEstado.innerText = "Debe ingresar el RUT y el Nombre antes de capturar";
+                componenteEstado.style.color = "#FF0000";
+                componenteContenedorNotif.className = "bloque-notificaciones estado-error";
+                return;
+            }
+
+            // Valida el estado de la cámara web antes de proceder con el enrolamiento
+            if (!camaraActiva) {
+                componenteEstado.innerText = "Error: No se puede iniciar el proceso sin acceso a la cámara";
                 componenteEstado.style.color = "#FF0000";
                 componenteContenedorNotif.className = "bloque-notificaciones estado-error";
                 return;
