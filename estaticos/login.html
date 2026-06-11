@@ -68,10 +68,9 @@
                     elementoMensaje.style.color = "#2ea44f";
                     elementoMensaje.style.fontWeight = "700";
 
-                    // redirigir al panel de administración después de un breve retraso
-                    // para que el usuario pueda ver el mensaje de éxito
+                    // Redirigir a la consola del panel administrativo después de una breve pausa para mostrar el mensaje de éxito
                     setTimeout(() => {
-                        window.location.href = "/estaticos/registro.html";
+                        window.location.href = "/estaticos/panel.html";
                     }, 600);
                 } else {
                     elementoMensaje.innerText = `Error: ${datos.detalle || 'Credenciales incorrectas'}`;

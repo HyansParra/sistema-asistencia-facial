@@ -5,7 +5,10 @@ from fastapi.responses import RedirectResponse # Para redirigir a la página pri
 from typing import List # List para poder recibir multiples archivos juntos
 import numpy as np # numpy para hacer el promedio matemático de vectores
 import conexion_bd # Importamos las funciones de conexión a la base de datos y manejo de empleados
+import inteligencia
+import inteligencia
 import reconocimiento # Importamos la función para extraer el vector facial usando DeepFace
+import validaciones
 
 
 # Inicializamos la aplicación FastAPI
@@ -117,7 +120,7 @@ async def login_administrador(usuario: str = Form(...), clave: str = Form(...)):
             "detalle": "El usuario o la contraseña no coinciden"
         }
 
-# Endpoint para registrar un nuevo empleado con su vector facial promedio a partir de 5 fotos
+# Endpoint para registrar empleados usando el promedio de 5 fotos
 @app.post("/registrar")
 async def registrar_empleado(
     rut: str = Form(...), 
@@ -125,12 +128,25 @@ async def registrar_empleado(
     fotos: List[UploadFile] = File(...)
 ):
     """
-    Recibe los datos de un nuevo trabajador junto a una ráfaga de 5 fotos de distintos ángulos.
-    Extrae los vectores de cada una, calcula el promedio y guarda en Supabase.
+    Recibe los datos del trabajador y sus 5 fotos desde distintos ángulos.
+    Valida el RUT, busca duplicados, saca el promedio de los vectores y guarda en la BD.
     """
+    # 1. Validar el RUT chileno matemáticamente
+    if not validaciones.validar_rut_chileno(rut):
+        return {"estado": "error", "detalle": "El RUT ingresado no es válido o el dígito verificador es incorrecto"}
+
+    # Deja el RUT formateado como XXXXXXXX-X para guardarlo siempre igual
+    rut_formateado = validaciones.formatear_rut(rut)
+
+    # 2. Revisar que el RUT o el nombre no estén repetidos en la base de datos
+    mensaje_duplicado = conexion_bd.verificar_duplicados_empleado(rut_formateado, nombre_completo)
+    if mensaje_duplicado:
+        return {"estado": "error", "detalle": mensaje_duplicado}
+
+    # Si pasa las validaciones básicas, empieza el procesamiento de las imágenes
     vectores_extraidos = []
 
-    print(f"Iniciando registro para: {nombre_completo} ({rut}) | Procesando {len(fotos)} ángulos faciales...")
+    print(f"Iniciando registro para: {nombre_completo} ({rut_formateado}) | Procesando {len(fotos)} ángulos faciales...")
 
     for foto in fotos:
         try:
@@ -145,13 +161,13 @@ async def registrar_empleado(
     if not vectores_extraidos:
         return {"estado": "error", "detalle": "No se pudo detectar un rostro claro en los ángulos enviados"}
 
-    # Promediamos la matriz de 5 vectores para conseguir el vector definitivo
+    # Promedia los vectores obtenidos para armar el vector maestro definitivo
     matriz_vectores = np.array(vectores_extraidos)
     vector_promedio = np.mean(matriz_vectores, axis=0)
     vector_final_lista = vector_promedio.tolist()
 
-    # Guardamos los datos finales en Supabase
-    resultado_bd = conexion_bd.guardar_nuevo_empleado(rut, nombre_completo, vector_final_lista)
+    # Guarda el nuevo registro en Supabase
+    resultado_bd = conexion_bd.guardar_nuevo_empleado(rut_formateado, nombre_completo.strip(), vector_final_lista)
 
     if resultado_bd:
         return {
@@ -159,4 +175,54 @@ async def registrar_empleado(
             "mensaje": f"Empleado {nombre_completo} registrado exitosamente"
         }
     else:
-        return {"estado": "error", "detalle": "El RUT ya se encuentra registrado o hubo una falla al insertar en Supabase"}
+        return {"estado": "error", "detalle": "Hubo una falla al insertar el registro en Supabase"}
+    
+# Endpoint para recopilar métricas en tiempo real (KPIs) para el Dashboard
+@app.get("/kpis")
+def obtener_metricas_dashboard():
+    from datetime import datetime
+    import traceback
+    try:
+        # Extraemos el total de empleados y usamos tu columna fecha_date
+        res_emp = conexion_bd.base_datos.table("empleados").select("id").execute()
+        res_asist = conexion_bd.base_datos.table("asistencia").select("empleado_id, fecha_date").execute()
+
+        total_empleados = len(res_emp.data) if res_emp.data else 0
+        marcas = res_asist.data if res_asist.data else []
+
+        # Comparamos estrictamente la fecha de hoy con tu columna fecha_date
+        fecha_hoy_str = datetime.now().strftime("%Y-%m-%d")
+        marcas_hoy = []
+        
+        for m in marcas:
+            fecha_marca = m.get("fecha_date")
+            if fecha_marca and str(fecha_marca) == fecha_hoy_str:
+                marcas_hoy.append(m)
+
+        empleados_presentes = len(set(m["empleado_id"] for m in marcas_hoy))
+
+        return {
+            "total_empleados": total_empleados,
+            "total_marcas_hoy": len(marcas_hoy),
+            "empleados_presentes": empleados_presentes
+        }
+    except Exception as e:
+        print(f"Error al calcular KPIs del panel: {e}")
+        traceback.print_exc()
+        return {"total_empleados": 0, "total_marcas_hoy": 0, "empleados_presentes": 0}
+
+# Endpoint que procesa el chat analítico delegando el contexto a LangChain y Gemini
+@app.post("/chat")
+async def chat_analitico_auditor(pregunta: str = Form(...)):
+    """
+    Recibe la duda del administrador en texto libre, la procesa mediante el pipeline
+    de inteligencia artificial y retorna la conclusión detallada.
+    """
+    print(f"Consulta recibida: '{pregunta}'")
+    
+    # delegamos la tarea de análisis y respuesta a la función especializada en inteligencia.py
+    respuesta_ia = inteligencia.analizar_datos_asistencia(pregunta)
+    
+    return {
+        "respuesta": respuesta_ia
+    }

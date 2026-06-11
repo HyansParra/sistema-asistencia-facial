@@ -1,4 +1,5 @@
 import os # Para manejar las variables de entorno
+import re # Para limpiar espacios extra en los nombres de los empleados
 from supabase import create_client, Client # Para interactuar con la base de datos de Supabase
 from dotenv import load_dotenv # Importamos la herramienta para leer el archivo .env
 
@@ -67,3 +68,27 @@ def buscar_coincidencia_facial(vector_rostro: list):
     except Exception as e:
         print(f"Error al buscar coincidencia en la BD: {e}")
         return None
+    
+def verificar_duplicados_empleado(rut_formateado: str, nombre_completo: str):
+    """
+    Revisa si el RUT o el nombre ya existen en Supabase.
+    Devuelve un texto con el error si encuentra algo repetido, o None si está todo OK.
+    """
+    try:
+        # Busca si el RUT ya existe para no duplicarlo
+        res_rut = base_datos.table("empleados").select("rut").eq("rut", rut_formateado).execute()
+        if res_rut.data:
+            return "El RUT ingresado ya se encuentra registrado en el sistema"
+            
+        # Borra espacios extras al inicio, al final y junta los espacios dobles entre medio
+        nombre_limpio = re.sub(r'\s+', ' ', nombre_completo).strip()
+            
+        # El ilike de Supabase busca sin importar mayúsculas o minúsculas
+        res_nombre = base_datos.table("empleados").select("nombre_completo").ilike("nombre_completo", nombre_limpio).execute()
+        if res_nombre.data:
+            return "Ya existe un empleado registrado con ese mismo nombre completo"
+            
+        return None
+    except Exception as e:
+        print(f"Error al verificar duplicados en la base de datos: {e}")
+        return "Error interno de comunicación al verificar duplicados"
