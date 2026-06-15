@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acceso Administrador</title>
+    <title>Acceso Admin</title>
     <link rel="stylesheet" href="estilos.css">
 </head>
 <body>
@@ -36,7 +36,6 @@
     <script>
         const elementoMensaje = document.getElementById('mensaje-servidor');
 
-        // Permite enviar las credenciales de forma natural presionando la tecla Enter en los campos
         function evaluarEnter(evento) {
             if (evento.key === 'Enter') {
                 autenticarAdministrador();
@@ -57,7 +56,6 @@
             elementoMensaje.innerText = "Verificando credenciales...";
             elementoMensaje.style.color = "#0066cc";
 
-            // Formulario para enviar los datos al servidor
             const formulario = new FormData();
             formulario.append('usuario', correo);
             formulario.append('clave', clave);
@@ -75,7 +73,7 @@
                     elementoMensaje.style.color = "#2ea44f";
                     elementoMensaje.style.fontWeight = "700";
 
-                    // Redirigir a la consola del panel administrativo después de una breve pausa para mostrar el mensaje de éxito
+                    // Retraso de cortesía visual previo al redireccionamiento de sesión
                     setTimeout(() => {
                         window.location.href = "/estaticos/panel.html";
                     }, 600);

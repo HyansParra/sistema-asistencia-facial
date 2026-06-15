@@ -55,7 +55,6 @@
         const inputMensaje = document.getElementById('mensaje-input');
         const botonEnviar = document.getElementById('btn-enviar');
 
-        // Función encargada de descargar las métricas rápidas directamente desde FastAPI
         async function cargarMétricasKPI() {
             try {
                 const respuesta = await fetch('/kpis');
@@ -71,46 +70,37 @@
             }
         }
 
-        // Permite enviar la pregunta a Gemini al presionar Enter, además de al hacer clic en el botón
         function evaluarEnter(evento) {
             if (evento.key === 'Enter') {
                 enviarPreguntaIA();
             }
         }
 
-        // Gestiona la lógica de envío del chat e interactúa con el endpoint de analítica de Python
         async function enviarPreguntaIA() {
             const textoPregunta = inputMensaje.value.trim();
             if (!textoPregunta) return;
 
-            // Inyectamos la pregunta del usuario en la interfaz antes de llamar a Gemini para una experiencia más fluida
             inyectarBurbuja(textoPregunta, 'usuario');
-            inputMensaje.value = ""; // Limpiamos la caja de texto
+            inputMensaje.value = "";
             
-            // Bloqueamos controles durante la llamada a Gemini
             inputMensaje.disabled = true;
             botonEnviar.disabled = true;
 
-            // Colocamos una burbuja temporal simulando que la IA está pensando
             const burbujaEspera = inyectarBurbuja("Analizando registros de asistencia...", 'ia');
 
             try {
-                // Preparamos el formulario con la pregunta para enviar al backend
                 const formulario = new FormData();
                 formulario.append('pregunta', textoPregunta);
 
-                // Solicitud POST hacia el backend
                 const respuesta = await fetch('/chat', {
                     method: 'POST',
                     body: formulario
                 });
                 const datos = await respuesta.json();
 
-                // Removemos la burbuja de espera y mostramos la respuesta de Gemini o un mensaje de error
                 burbujaEspera.remove();
 
                 if (respuesta.ok) {
-                    // Inyectamos la respuesta de Gemini en la interfaz
                     inyectarBurbuja(datos.respuesta, 'ia');
                 } else {
                     inyectarBurbuja(`Error: ${datos.detalle || 'No se pudo procesar la consulta'}`, 'ia');
@@ -121,26 +111,22 @@
                 burbujaEspera.remove();
                 inyectarBurbuja("Error de comunicación: El servidor no responde.", 'ia');
             } finally {
-                // Desbloqueamos controles independientemente del resultado para permitir nuevas consultas
                 inputMensaje.disabled = false;
                 botonEnviar.disabled = false;
                 inputMensaje.focus();
             }
         }
 
-        // Función auxiliar para inyectar burbujas de chat en la interfaz, diferenciando entre usuario y IA
         function inyectarBurbuja(texto, remitente) {
             const div = document.createElement('div');
             div.className = `burbuja burbuja-${remitente}`;
             div.innerText = texto;
             historialDiv.appendChild(div);
             
-            // Auto-scroll automático para mantener el último mensaje siempre a la vista
             historialDiv.scrollTop = historialDiv.scrollHeight;
             return div;
         }
 
-        // Inicializamos la descarga de métricas al cargar la consola administrativa
         cargarMétricasKPI();
     </script>
 </body>

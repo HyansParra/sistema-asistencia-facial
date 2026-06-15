@@ -39,12 +39,10 @@
     </div>
 
     <script>
-        // Mis elementos del DOM que voy a usar para mostrar la cámara, el reloj y los mensajes del servidor
         const elementoVideo = document.getElementById('video-webcam');
         const elementoReloj = document.getElementById('reloj-digital');
         const elementoMensaje = document.getElementById('mensaje-servidor');
 
-        // Función para prender la cámara apenas cargue la página
         async function iniciarCamara() {
             try {
                 const flujoVideo = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -52,12 +50,11 @@
             } catch (error) {
                 console.error("Error en la cámara:", error);
                 elementoMensaje.innerText = "Error al conectar la cámara web";
-                elementoMensaje.style.color = "#FF0000"; // Color Rojo para errores
-                elementoMensaje.style.fontWeight = "700"; // Texto en negrita para destacar el error
+                elementoMensaje.style.color = "#FF0000";
+                elementoMensaje.style.fontWeight = "700";
             }
         }
 
-        // Para mostrar la fecha y hora actualizada cada segundo
         function actualizarReloj() {
             const momentoActual = new Date();
             
@@ -70,12 +67,11 @@
             elementoReloj.innerText = `Fecha y Hora: ${momentoActual.toLocaleString('es-CL', opcionesFormato)}`;
         }
 
-        // Lógica para capturar el cuadro de la cámara y enviarlo a FastAPI
         async function procesarMarcaje(tipoRegistro) {
             elementoMensaje.innerText = `Capturando rostro para ${tipoRegistro}...`;
             elementoMensaje.style.color = "#0066cc";
 
-            // lienzo temporal para dibujar el cuadro congelado de la cámara
+            // Contexto gráfico temporal para el aislamiento del fotograma actual
             const lienzo = document.createElement('canvas');
             lienzo.width = elementoVideo.videoWidth;
             lienzo.height = elementoVideo.videoHeight;
@@ -83,7 +79,7 @@
             const contexto = lienzo.getContext('2d');
             contexto.drawImage(elementoVideo, 0, 0, lienzo.width, lienzo.height);
 
-            // Convertir la imagen congelada a un archivo binario JPEG
+            // Transmisión asíncrona del fotograma en formato binario comprimido
             lienzo.toBlob(async (blob) => {
                 if (!blob) {
                     elementoMensaje.innerText = "Error al capturar la foto de la cámara";
@@ -92,7 +88,6 @@
                     return;
                 }
 
-                // Empaqueta la foto y el tipo de registro en un formulario virtual
                 const formulario = new FormData();
                 formulario.append('foto', blob, 'captura.jpg');
                 formulario.append('tipo_registro', tipoRegistro);
@@ -100,7 +95,6 @@
                 try {
                     elementoMensaje.innerText = "Enviando datos al servidor...";
                     
-                    // Envía el formulario por método POST al backend
                     const respuesta = await fetch('/marcar', {
                         method: 'POST',
                         body: formulario
@@ -110,7 +104,7 @@
                     
                     if (respuesta.ok) {
                         elementoMensaje.innerText = `Estado: ${datos.mensaje}`;
-                        elementoMensaje.style.color = "#2ea44f"; // ltras verdes si sale bien
+                        elementoMensaje.style.color = "#2ea44f";
                         elementoMensaje.style.fontWeight = "700";
                     } else {
                         elementoMensaje.innerText = `Error - ${datos.detalle || 'No se pudo procesar'}`;
@@ -127,10 +121,8 @@
             }, 'image/jpeg', 0.9);
         }
 
-        // Iniciar la cámara y el reloj apenas cargue la página
         iniciarCamara();
         setInterval(actualizarReloj, 1000);
     </script>
 </body>
 </html>
-    

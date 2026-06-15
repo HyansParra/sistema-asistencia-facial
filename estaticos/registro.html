@@ -49,7 +49,6 @@
     </div>
 
     <script>
-        // Referencias a los elementos de la interfaz
         const video = document.getElementById('video-registro');
         const componenteContenedorNotif = document.getElementById('contenedor-notif');
         const componenteEstado = document.getElementById('estado-registro');
@@ -58,7 +57,6 @@
         const campoRut = document.getElementById('campo-rut');
         const campoNombre = document.getElementById('campo-nombre');
 
-        // Arreglo de instrucciones con formato dinámico
         const instrucciones = [
             "Acomode su rostro al centro y mire de <strong>FRENTE</strong>",
             "Gire la cabeza con suavidad hacia la <strong>IZQUIERDA</strong>",
@@ -71,7 +69,6 @@
         let fotosElegidas = [];
         let camaraActiva = false;
 
-        // Actualiza el estado de las burbujas de progreso
         function actualizarPasosVisuales() {
             for (let i = 0; i < instrucciones.length; i++) {
                 const dot = document.getElementById(`dot-${i}`);
@@ -89,7 +86,6 @@
             }
         }
 
-        // Encender la camara web
         async function encenderWebcam() {
             try {
                 const flujo = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -105,7 +101,6 @@
             }
         }
 
-        // Proceso principal de captura por pasos
         async function iniciarCapturaBiometrica() {
             const rut = campoRut.value.trim();
             const nombre = campoNombre.value.trim();
@@ -125,7 +120,7 @@
                 return;
             }
 
-            // Validacion de datos antes de iniciar capturas
+            // Validación asíncrona de duplicados antes de alterar el estado del flujo biométrico
             if (pasoActual === -1) {
                 botonCaptura.disabled = true;
                 componenteContenedorNotif.className = "bloque-notificaciones estado-info";
@@ -180,7 +175,7 @@
                 return;
             }
 
-            // Efecto visual de obturador
+            // Desencadenamiento de la clase CSS de animación de obturación gráfica
             video.classList.add('camara-flash');
             setTimeout(() => {
                 video.classList.remove('camara-flash');
@@ -218,7 +213,6 @@
             }
         }
 
-        // Envio de datos al servidor
         async function enviarRáfagaAlServidor(rut, nombre) {
             botonCaptura.disabled = true;
             contadorEnOval.innerText = "";

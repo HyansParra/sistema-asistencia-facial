@@ -1,4 +1,4 @@
-/* para centrar todo en la pantalla */
+/* Estructura base y centrado absoluto del viewport */
 body {
     margin: 0;
     padding: 0;
@@ -33,7 +33,7 @@ h1 {
 }
 
 .contenedor-camara {
-    position: relative; /* para que el recuadro-rostro no se desarme */
+    position: relative;
     width: 100%;
     height: 380px;
     background-color: #ffffff;
@@ -41,45 +41,44 @@ h1 {
     overflow: hidden;
 }
 
-/* agrupamos estilos para ambos videos, webcam y registro */
+/* Normalización de flujos de video con inversión en espejo (transform: scaleX) */
 #video-webcam, #video-registro {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transform: scaleX(-1); /* para modo espejo de la imagen y que sea más natural para el usuario */
+    transform: scaleX(-1);
 }
 
 .recuadro-rostro {
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%); /* para centrar el óvalo justo al medio */
+    transform: translate(-50%, -50%);
     width: 220px;
     height: 290px;
     border: 3px dashed #ffcc00;
     border-radius: 50%;
-    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4); /* para oscurecer los lados */
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
     pointer-events: none;
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
-/* Estilos para el contador de segundos dentro del óvalo */
+/* Capa flotante frontal para indicaciones direccionales/biométricas */
 #contador-oval {
-    position: absolute; /* Forzamos que flote sobre cualquier elemento */
-    top: 50%; /* Lo ubicamos al centro vertical */
-    left: 50%; /* Lo ubicamos al centro horizontal */
-    transform: translate(-50%, -50%); /* Ajuste preciso para centrar el número */
-    z-index: 10; /* Lo posiciona al frente del video */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
     font-size: 90px;
     font-weight: 800;
-    color: rgba(255, 255, 255, 0.65); /* Blanco con 65% de opacidad para que sea visible pero no moleste demasiado */
+    color: rgba(255, 255, 255, 0.65);
     font-family: 'Segoe UI', Arial, sans-serif;
-    /* Agregamos un efecto de sombra para mejorar la legibilidad del número sobre el video, especialmente en fondos claros o con mucho detalle */
-    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5); 
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
     user-select: none;
-    pointer-events: none; /* Evita interferencias con el mouse o clicks */
+    pointer-events: none;
 }
 
 .bloque-notificaciones {
@@ -93,10 +92,10 @@ h1 {
 }
 
 #estado-registro {
-    font-size: 18px; /* Agranda considerablemente el texto para que sea más visible para personas con vision reducida */
-    font-weight: 700; /* Lo hace en negrita */
-    font-family: 'Segoe UI', Arial, sans-serif; /* Reemplaza la fuente monospace por una limpia y legible */
-    line-height: 1.4; /* Le da espacio a los textos largos para que no se amontonen */
+    font-size: 18px;
+    font-weight: 700;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    line-height: 1.4;
 }
 
 #reloj-digital {
@@ -144,29 +143,26 @@ h1 {
     background-color: #b01e2a;
 }
 
-/* Animación de efecto de obturador para simular el flash de la cámara al capturar la imagen*/
+/* Simulación de obturación fotográfica optimizada por hardware (GPU) */
 @keyframes efectoObturador {
     0% { 
-        opacity: 0; /* El video se vuelve completamente transparente al inicio para simular el destello del flash */
-        filter: brightness(3); /* Aumenta el brillo al máximo para simular el flash intenso */
+        opacity: 0;
+        filter: brightness(3);
     }
     15% {
-        opacity: 0.3; /* Aparece un destello inicial con algo de transparencia para simular el flash */
+        opacity: 0.3;
         filter: brightness(2.5);
     }
     100% { 
-        opacity: 1; /* El video vuelve a su estado normal completamente visible */
-        filter: brightness(1); 
+        opacity: 1;
+        filter: brightness(1);
     }
 }
 
-/* Aplica la animación de flash a los videos */
 #video-registro.camara-flash, #video-webcam.camara-flash {
-    /* Tiempo de 0.35 segundos para que el efecto sea rápido pero perceptible */
     animation: efectoObturador 0.35s ease-out;
 }
 
-/* Contenedor de las 5 burbujas de progreso de registro */
 .contenedor-pasos {
     display: flex;
     justify-content: center;
@@ -174,7 +170,6 @@ h1 {
     margin: 15px 0 20px 0;
 }
 
-/* Estado base de cada burbuja pendiente */
 .paso-dot {
     width: 34px;
     height: 34px;
@@ -190,7 +185,6 @@ h1 {
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* Estado de la burbuja activa */
 .paso-dot.activo {
     background-color: #e7f5ff;
     border-color: #0066cc;
@@ -199,7 +193,6 @@ h1 {
     box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.15);
 }
 
-/* Estado de las burbujas completadas */
 .paso-dot.completado {
     background-color: #2ea44f;
     border-color: #2ea44f;
@@ -207,7 +200,6 @@ h1 {
     transform: scale(1);
 }
 
-/* Modificadores dinámicos para el bloque de alertas */
 .bloque-notificaciones.estado-info {
     background-color: #f1f7ff;
     border-color: #bce0ff;
@@ -223,18 +215,16 @@ h1 {
     border-color: #ffc9c9;
 }
 
-/* Estilos para el contenedor del panel de administración */
 .tarjeta-panel {
     background-color: #ffffff;
     padding: 30px;
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     width: 100%;
-    max-width: 750px; /* Más ancho para dar espacio a las métricas y al chat */
+    max-width: 750px;
     text-align: center;
 }
 
-/* Contenedor de las métricas KPI en formato de tarjetas, usando grid para adaptarse a diferentes tamaños de pantalla */
 .contenedor-kpis {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -264,7 +254,6 @@ h1 {
     text-transform: uppercase;
 }
 
-/* Caja contenedora de la interfaz del chat analítico */
 .area-chat {
     border: 1px solid #dee2e6;
     border-radius: 8px;
@@ -276,7 +265,6 @@ h1 {
     text-align: left;
 }
 
-/* Ventana de historial de mensajes */
 .historial-mensajes {
     flex: 1;
     padding: 15px;
@@ -287,7 +275,6 @@ h1 {
     background-color: #fcfcfd;
 }
 
-/* Burbujas de chat */
 .burbuja {
     max-width: 80%;
     padding: 10px 14px;
@@ -296,7 +283,6 @@ h1 {
     line-height: 1.4;
 }
 
-/* Burbuja del administrador */
 .burbuja-usuario {
     background-color: #0066cc;
     color: #ffffff;
@@ -304,7 +290,6 @@ h1 {
     border-bottom-right-radius: 2px;
 }
 
-/* Burbuja de asistente IA */
 .burbuja-ia {
     background-color: #e9ecef;
     color: #222222;
@@ -313,7 +298,6 @@ h1 {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
-/* Barra inferior de entrada de texto */
 .barra-entrada-chat {
     display: flex;
     border-top: 1px solid #dee2e6;
