@@ -2,10 +2,18 @@ import re
 
 def validar_rut_chileno(rut: str) -> bool:
     """
-    Valida si un RUT chileno es real usando el cálculo del dígito verificador.
-    Funciona si viene con puntos, guiones o solo números.
+    Valida un RUT chileno mediante el algoritmo del dígito verificador (Módulo 11).
+
+    Soporta cadenas con puntos, guiones, espacios o caracteres limpios.
+    
+    Args:
+        rut (str): Cadena de texto con el RUT a evaluar.
+        
+    Returns:
+        bool: True si el dígito verificador coincide con el cuerpo numérico, 
+              False en caso contrario o si el formato inicial es inválido.
     """
-    # Deja solo los números y la K, eliminando puntos, guiones o espacios
+    # Normalización del texto: retiene solo dígitos y el carácter verificador 'K'
     rut_limpio = re.sub(r'[^0-9kK]', '', rut).upper()
     
     if len(rut_limpio) < 2:
@@ -17,7 +25,7 @@ def validar_rut_chileno(rut: str) -> bool:
     if not cuerpo.isdigit():
         return False
         
-    
+    # Aplicación del algoritmo Módulo 11
     suma = 0
     multiplicador = 2
     
@@ -38,11 +46,13 @@ def validar_rut_chileno(rut: str) -> bool:
 
 def formatear_rut(rut: str) -> str:
     """
-    Estandariza el RUT al formato de la base de datos: sin puntos y con guion (12345678-9).
-    Esto evita problemas de duplicados o búsquedas fallidas en Supabase.
+    Estandariza el formato del RUT al patrón persistido en la base de datos (XXXXXXXX-X).
+
+    Elimina caracteres especiales de separación y asegura consistencia para evitar 
+    falsos negativos en las búsquedas o duplicación de registros.
     """
     rut_limpio = re.sub(r'[^0-9kK]', '', rut).upper()
     if len(rut_limpio) < 2:
         return rut_limpio
-    # Separa el último dígito con un guion, sin importar si el RUT es corto o largo
+        
     return f"{rut_limpio[:-1]}-{rut_limpio[-1]}"

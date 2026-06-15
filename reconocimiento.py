@@ -1,14 +1,21 @@
-import cv2 # OpenCV para procesar las imágenes recibidas y convertirlas al formato adecuado para DeepFace
-import numpy as np # numpy para manejar los vectores faciales como arrays numéricos
-from deepface import DeepFace # DeepFace para extraer los embeddings faciales usando el modelo Facenet
+import cv2
+import numpy as np
+from deepface import DeepFace
 
 def extraer_vector_rostro(archivos_bytes: bytes):
     """
-    Toma los bytes de una imagen, la transforma al formato de OpenCV 
-    y extrae su embedding de 128 dimensiones usando el modelo Facenet.
+    Procesa los bytes de una imagen para extraer su embedding facial de 128 dimensiones.
+
+    Utiliza el modelo Facenet tras decodificar el flujo binario en una estructura de tres canales.
+
+    Args:
+        archivos_bytes (bytes): Flujo binario de la imagen capturada por el sensor web.
+
+    Returns:
+        list: Vector de características numéricas que representa las facciones del rostro,
+              o None si ocurre una falla en la decodificación o el análisis.
     """
     try:
-        # Convertimos los bytes binarios en una matriz numérica que OpenCV entienda
         matriz_numeros = np.frombuffer(archivos_bytes, np.uint8)
         imagen = cv2.imdecode(matriz_numeros, cv2.IMREAD_COLOR)
 
@@ -16,15 +23,14 @@ def extraer_vector_rostro(archivos_bytes: bytes):
             print("Error: No se pudo decodificar la imagen recibida")
             return None
 
-        # Usamos DeepFace para extraer las características del rostro
-        # Usamos enforce_detection=False para que no se caiga el servidor si la iluminación es mala
+        # Se deshabilita 'enforce_detection' para evitar excepciones bloqueantes en el hilo
+        # principal si la captura presenta subexposición, reflejos o desenfoque temporal.
         analisis = DeepFace.represent(
             img_path=imagen, 
             model_name="Facenet", 
             enforce_detection=False
         )
         
-        # Extraemos la lista de 128 números que representan el vector facial
         vector = analisis[0]["embedding"]
         return vector
 
