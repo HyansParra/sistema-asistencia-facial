@@ -49,7 +49,7 @@
     </div>
 
     <script>
-        // Referencias a elementos del DOM para control de flujo y actualización de UI
+        // Referencias a los elementos de la interfaz
         const video = document.getElementById('video-registro');
         const componenteContenedorNotif = document.getElementById('contenedor-notif');
         const componenteEstado = document.getElementById('estado-registro');
@@ -58,20 +58,20 @@
         const campoRut = document.getElementById('campo-rut');
         const campoNombre = document.getElementById('campo-nombre');
 
-        // Define las instrucciones para cada una de las 5 perspectivas que el administrador debe capturar
+        // Arreglo de instrucciones con formato dinámico
         const instrucciones = [
-            "Mire fijamente de FRENTE",
-            "Gire levemente la cabeza a la IZQUIERDA",
-            "Gire levemente la cabeza a la DERECHA",
-            "Incline levemente la cabeza hacia ARRIBA",
-            "Incline levemente la cabeza hacia ABAJO"
+            "Acomode su rostro al centro y mire de <strong>FRENTE</strong>",
+            "Gire la cabeza con suavidad hacia la <strong>IZQUIERDA</strong>",
+            "Gire la cabeza con suavidad hacia la <strong>DERECHA</strong>",
+            "Incline el rostro levemente hacia <strong>ARRIBA</strong>",
+            "Incline el rostro levemente hacia <strong>ABAJO</strong>"
         ];
 
-        let pasoActual = -1; // Controla la fase actual del proceso de captura desde -1 que es antes de iniciar, hasta 4 que es la última foto
+        let pasoActual = -1;
         let fotosElegidas = [];
-        let camaraActiva = false; // Bandera de control para validar el estado del hardware de video
+        let camaraActiva = false;
 
-        // Función auxiliar encargada de refrescar la estética de los 5 círculos en tiempo real
+        // Actualiza el estado de las burbujas de progreso
         function actualizarPasosVisuales() {
             for (let i = 0; i < instrucciones.length; i++) {
                 const dot = document.getElementById(`dot-${i}`);
@@ -89,7 +89,7 @@
             }
         }
 
-        // Activa la webcam y muestra el video en vivo
+        // Encender la camara web
         async function encenderWebcam() {
             try {
                 const flujo = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -105,12 +105,12 @@
             }
         }
 
-        // Controla todo el flujo de captura por pasos y valida los datos
+        // Proceso principal de captura por pasos
         async function iniciarCapturaBiometrica() {
             const rut = campoRut.value.trim();
             const nombre = campoNombre.value.trim();
+            const simbolosGuia = ["⊙", "←", "→", "↑", "↓"];
 
-            // Validar que las cajas de texto no estén vacías
             if (!rut || !nombre) {
                 componenteEstado.innerText = "Debe ingresar el RUT y el Nombre antes de capturar";
                 componenteEstado.style.color = "#FF0000";
@@ -118,7 +118,6 @@
                 return;
             }
 
-            // Valida el estado de la cámara web antes de proceder con el enrolamiento
             if (!camaraActiva) {
                 componenteEstado.innerText = "Error: No se puede iniciar el proceso sin acceso a la cámara";
                 componenteEstado.style.color = "#FF0000";
@@ -126,12 +125,12 @@
                 return;
             }
 
-            // Antes de empezar a sacar fotos, validamos el RUT y duplicados en el servidor
+            // Validacion de datos antes de iniciar capturas
             if (pasoActual === -1) {
                 botonCaptura.disabled = true;
                 componenteContenedorNotif.className = "bloque-notificaciones estado-info";
                 componenteEstado.innerText = "Verificando datos en el sistema...";
-                componenteEstado.style.color = "#0066cc";
+                componenteEstado.style.color = "#333333";
 
                 try {
                     const formularioVerificar = new FormData();
@@ -145,7 +144,6 @@
 
                     const resultadoVerificar = await respuestaVerificar.json();
 
-                    // Si el servidor rebota los datos por RUT inválido o nombre repetido, frenamos todo
                     if (!respuestaVerificar.ok || resultadoVerificar.estado !== "exito") {
                         componenteContenedorNotif.className = "bloque-notificaciones estado-error";
                         componenteEstado.innerText = `Error - ${resultadoVerificar.detalle || 'Datos inválidos'}`;
@@ -162,7 +160,6 @@
                     return;
                 }
 
-                // Si los datos están limpios, bloqueamos los campos y preparamos la primera foto
                 botonCaptura.disabled = false;
                 campoRut.disabled = true;
                 campoNombre.disabled = true;
@@ -170,28 +167,31 @@
                 pasoActual = 0;
 
                 componenteContenedorNotif.className = "bloque-notificaciones estado-info";
-                componenteEstado.innerText = `Posición 1/5: ${instrucciones[pasoActual]}. Acomódese y presione el botón.`;
-                componenteEstado.style.color = "#0066cc";
-                contadorEnOval.innerText = "1";
+                componenteEstado.style.color = "#333333";
+                
+                componenteEstado.innerHTML = `
+                    <span style="color: #222222; font-size: 16px; display: block; margin-bottom: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Enrolamiento Biométrico (Paso 1 de 5)</span>
+                    <span style="font-weight: normal;">${instrucciones[pasoActual]}</span>
+                `;
+                
+                contadorEnOval.innerText = simbolosGuia[pasoActual];
                 botonCaptura.innerText = "Tomar Foto (1/5)";
                 actualizarPasosVisuales();
                 return;
             }
 
-            // Efecto visual de flash al capturar la foto
+            // Efecto visual de obturador
             video.classList.add('camara-flash');
             setTimeout(() => {
                 video.classList.remove('camara-flash');
             }, 350);
 
-            // Canvas temporal para congelar el cuadro del video
             const lienzo = document.createElement('canvas');
             lienzo.width = video.videoWidth;
             lienzo.height = video.videoHeight;
             const contexto = lienzo.getContext('2d');
             contexto.drawImage(video, 0, 0, lienzo.width, lienzo.height);
 
-            // Convertir a blob JPEG y guardar en el arreglo
             await new Promise((resolve) => {
                 lienzo.toBlob((blob) => {
                     if (blob) fotosElegidas.push(blob);
@@ -202,27 +202,29 @@
             pasoActual++;
 
             if (pasoActual < instrucciones.length) {
-                // Siguiente ángulo en la lista
                 componenteContenedorNotif.className = "bloque-notificaciones estado-info";
-                componenteEstado.innerText = `Posición ${pasoActual + 1}/5: ${instrucciones[pasoActual]}. Presione para capturar.`;
-                contadorEnOval.innerText = pasoActual + 1;
+                componenteEstado.innerHTML = `
+                    <span style="color: #222222; font-size: 16px; display: block; margin-bottom: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Enrolamiento Biométrico (Paso ${pasoActual + 1} de 5)</span>
+                    <span style="font-weight: normal;">${instrucciones[pasoActual]}</span>
+                `;
+                
+                contadorEnOval.innerText = simbolosGuia[pasoActual];
                 botonCaptura.innerText = `Tomar Foto (${pasoActual + 1}/5)`;
                 actualizarPasosVisuales();
             } else {
-                // Al completar las 5 fotos, se envía la ráfaga completa
                 contadorEnOval.innerText = "";
                 actualizarPasosVisuales();
                 await enviarRáfagaAlServidor(rut, nombre);
             }
         }
 
-        // Envía las 5 fotos guardadas en memoria al backend
+        // Envio de datos al servidor
         async function enviarRáfagaAlServidor(rut, nombre) {
             botonCaptura.disabled = true;
             contadorEnOval.innerText = "";
             componenteContenedorNotif.className = "bloque-notificaciones estado-info";
             componenteEstado.innerText = "Procesando y empaquetando ráfaga de imágenes...";
-            componenteEstado.style.color = "#0066cc";
+            componenteEstado.style.color = "#333333";
 
             const formulario = new FormData();
             formulario.append('rut', rut);
@@ -262,7 +264,6 @@
                 componenteEstado.style.color = "#FF0000";
                 componenteEstado.style.fontWeight = "700";
             } finally {
-                // Reset de variables para dejar todo listo para el siguiente empleado
                 pasoActual = -1;
                 fotosElegidas = [];
                 campoRut.disabled = false;
@@ -270,7 +271,6 @@
                 botonCaptura.disabled = false;
                 botonCaptura.innerText = "Iniciar Capturas";
 
-                // Limpieza de las burbujas visuales después de unos segundos
                 setTimeout(() => {
                     if (campoRut.value === "") {
                         for (let i = 0; i < instrucciones.length; i++) {
@@ -285,7 +285,6 @@
             }
         }
 
-        // Inicia la webcam al cargar la página
         encenderWebcam();
     </script>
 </body>
