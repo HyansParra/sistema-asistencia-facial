@@ -1,25 +1,24 @@
-import os # Para manejar las variables de entorno
-import re # Para limpiar espacios extra en los nombres de los empleados
-from supabase import create_client, Client # Para interactuar con la base de datos de Supabase
-from dotenv import load_dotenv # Importamos la herramienta para leer el archivo .env
+import os
+import re
+from datetime import datetime
+from zoneinfo import ZoneInfo  # Permite localizar el tiempo exacto usando la base de datos de tzdata
+from supabase import create_client, Client
+from dotenv import load_dotenv
 
-# Cargamos las variables de entorno desde el archivo .env para hacer la conexion con Supabase
+# Carga inicial de variables de entorno globales
 load_dotenv()
 
-# Cargamos las variables de entorno desde el archivo .env para hacer la conexion con Supabase
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-# Verificamos que las credenciales existan antes de intentar conectar con Supabase
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise ValueError("Error: Faltan las credenciales de Supabase en el archivo .env")
 
-# Creamos el cliente de Supabase para interactuar con la base de datos
 base_datos: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def guardar_nuevo_empleado(rut: str, nombre: str, vector: list):
     """
-    Inserta un nuevo empleado en la base de datos junto con su vector facial.
+    Inserta un nuevo registro de personal en la tabla 'empleados' junto con su vector maestro.
     """
     try:
         datos = {
@@ -35,12 +34,21 @@ def guardar_nuevo_empleado(rut: str, nombre: str, vector: list):
 
 def registrar_marca_asistencia(empleado_id: str, tipo: str):
     """
-    Registra un evento de ENTRADA o SALIDA para un empleado.
+    Registra una marca temporal de ENTRADA o SALIDA vinculada al ID del empleado.
+
+    Captura de manera explícita la fecha y hora bajo el huso horario de Chile 
+    (America/Santiago) para anular el comportamiento UTC por defecto de Supabase.
     """
     try:
+        # Obtención del objeto datetime localizado de forma estricta en la zona horaria chilena
+        ahora_chile = datetime.now(ZoneInfo("America/Santiago"))
+        
         datos = {
             "empleado_id": empleado_id,
-            "tipo_registro": tipo.upper()
+            "tipo_registro": tipo.upper(),
+            # Forzamos el envío de las cadenas formateadas con el tiempo local de la marca
+            "fecha_date": ahora_chile.strftime("%Y-%m-%d"),
+            "hora_time": ahora_chile.strftime("%H:%M:%S")
         }
         resultado = base_datos.table("asistencia").insert(datos).execute()
         return resultado.data
@@ -50,17 +58,15 @@ def registrar_marca_asistencia(empleado_id: str, tipo: str):
     
 def buscar_coincidencia_facial(vector_rostro: list):
     """
-    Llama a la función interna de Supabase para comparar el vector 
-    actual con el de todos los empleados registrados.
+    Ejecuta un procedimiento remoto (RPC) en Supabase para calcular la distancia
+    de coseno entre el vector capturado y los registros de la base de datos.
     """
     try:
-        # Llamamos a la función RPC personalizada que compara el vector recibido con los almacenados en la BD
         resultado = base_datos.rpc(
             "buscar_rostro_coincidente", 
             {"vector_buscado": vector_rostro}
         ).execute()
         
-        # Si encuentra registros, devolvemos el primer resultado
         if resultado.data and len(resultado.data) > 0:
             return resultado.data[0]
             
@@ -71,19 +77,18 @@ def buscar_coincidencia_facial(vector_rostro: list):
     
 def verificar_duplicados_empleado(rut_formateado: str, nombre_completo: str):
     """
-    Revisa si el RUT o el nombre ya existen en Supabase.
-    Devuelve un texto con el error si encuentra algo repetido, o None si está todo OK.
+    Verifica la existencia previa de las llaves naturales (RUT y Nombre Completo).
+
+    Aplica limpieza de espacios contiguos y una comparación insensible a mayúsculas/minúsculas 
+    para garantizar la unicidad de los datos antes del enrolamiento físico.
     """
     try:
-        # Busca si el RUT ya existe para no duplicarlo
         res_rut = base_datos.table("empleados").select("rut").eq("rut", rut_formateado).execute()
         if res_rut.data:
             return "El RUT ingresado ya se encuentra registrado en el sistema"
             
-        # Borra espacios extras al inicio, al final y junta los espacios dobles entre medio
         nombre_limpio = re.sub(r'\s+', ' ', nombre_completo).strip()
             
-        # El ilike de Supabase busca sin importar mayúsculas o minúsculas
         res_nombre = base_datos.table("empleados").select("nombre_completo").ilike("nombre_completo", nombre_limpio).execute()
         if res_nombre.data:
             return "Ya existe un empleado registrado con ese mismo nombre completo"
